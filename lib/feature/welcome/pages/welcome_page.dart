@@ -9,14 +9,14 @@ import '../../../common/widgets/custom_elevated_button.dart';
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
-  navigateToLoginPage(contex) {
+  navigateToLoginPage(context) {
     Navigator.of(
-      contex,
+      context,
     ).pushNamedAndRemoveUntil(Routes.login, (route) => false);
   }
 
   @override
-  Widget build(BuildContext contex) {
+  Widget build(BuildContext context) {
     return Scaffold(
       body: Column(
         children: [
@@ -30,7 +30,7 @@ class WelcomePage extends StatelessWidget {
                 ),
                 child: Image.asset(
                   'assets/images/circle.png',
-                  color: contex.theme.circleImageColor,
+                  color: context.theme.circleImageColor,
                 ),
               ),
             ),
@@ -45,7 +45,7 @@ class WelcomePage extends StatelessWidget {
                 ),
                 const PrivacyAndTerms(),
                 CustomElevatedButton(
-                  onPressed: () => navigateToLoginPage(contex),
+                  onPressed: () => navigateToLoginPage(context),
                   text: 'Agree and Continue',
                 ),
                 const SizedBox(height: 50),

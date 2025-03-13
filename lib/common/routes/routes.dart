@@ -21,7 +21,7 @@ class Routes {
         return MaterialPageRoute(
           builder:
               (contex) => VerificationPage(
-                verificationId: args['verificationId'],
+                smsCodeId: args['smsCodeId'],
                 phoneNumber: args['phoneNumber'],
               ),
         );
