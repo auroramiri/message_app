@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
+import 'package:message_app/common/utils/coloors.dart';
 import 'package:message_app/common/widgets/custom_elevated_button.dart';
+import 'package:message_app/common/widgets/custom_icon_button.dart';
+import 'package:message_app/common/widgets/short_h_bar.dart';
+import 'package:message_app/feature/auth/pages/image_picker_page.dart';
 import 'package:message_app/feature/auth/widgets/custom_text_field.dart';
 
 class UserInfoPage extends StatefulWidget {
@@ -11,6 +15,84 @@ class UserInfoPage extends StatefulWidget {
 }
 
 class _UserInfoPageState extends State<UserInfoPage> {
+  imagePickerTypeBottomSheet() {
+    return showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ShortHBar(),
+            Row(
+              children: [
+                SizedBox(width: 20),
+                Text(
+                  'Profile photo',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+                ),
+                Spacer(),
+                CustomIconButton(
+                  onTap: () => Navigator.pop(context),
+                  icon: Icons.close,
+                ),
+                SizedBox(width: 15),
+              ],
+            ),
+            Divider(color: context.theme.greyColor!.withValues(alpha: 0.3)),
+            SizedBox(height: 5),
+            Row(
+              children: [
+                SizedBox(width: 20),
+                imagePickerIcon(
+                  onTap: () {},
+                  icon: Icons.camera_alt_rounded,
+                  text: 'Camera',
+                ),
+                SizedBox(width: 15),
+                imagePickerIcon(
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => ImagePickerPage(),
+                      ),
+                    );
+                  },
+                  icon: Icons.photo_camera_back_rounded,
+                  text: 'Gallery',
+                ),
+              ],
+            ),
+            SizedBox(height: 15),
+          ],
+        );
+      },
+    );
+  }
+
+  imagePickerIcon({
+    required VoidCallback onTap,
+    required IconData icon,
+    required String text,
+  }) {
+    return Column(
+      children: [
+        CustomIconButton(
+          onTap: onTap,
+          icon: icon,
+          iconColor: Coloors.blueDark,
+          minWidth: 50,
+          border: Border.all(
+            color: context.theme.greyColor!.withValues(alpha: .2),
+            width: 1,
+          ),
+        ),
+        SizedBox(height: 5),
+        Text(text, style: TextStyle(color: context.theme.greyColor)),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -33,18 +115,21 @@ class _UserInfoPageState extends State<UserInfoPage> {
               style: TextStyle(color: context.theme.greyColor),
             ),
             SizedBox(height: 40),
-            Container(
-              padding: EdgeInsets.all(26),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: context.theme.photoIconBgColor,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 3, right: 3),
-                child: Icon(
-                  Icons.add_a_photo,
-                  size: 48,
-                  color: context.theme.photoIconColor,
+            GestureDetector(
+              onTap: imagePickerTypeBottomSheet,
+              child: Container(
+                padding: EdgeInsets.all(26),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: context.theme.photoIconBgColor,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 3, right: 3),
+                  child: Icon(
+                    Icons.add_a_photo,
+                    size: 48,
+                    color: context.theme.photoIconColor,
+                  ),
                 ),
               ),
             ),
