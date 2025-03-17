@@ -13,8 +13,17 @@ class ImagePickerPage extends StatefulWidget {
 
 class _ImagePickerPageState extends State<ImagePickerPage> {
   List<Widget> imageList = [];
+  int currentPage = 0;
+  int? lastPage;
+
+  handleScrollEvent(ScrollNotification scroll) {
+    if (scroll.metrics.pixels / scroll.metrics.maxScrollExtent <= 0.33) return;
+    if (currentPage == lastPage) return;
+    fetchAllImages();
+  }
 
   fetchAllImages() async {
+    lastPage = currentPage;
     final permission = await PhotoManager.requestPermissionExtend();
     if (!permission.isAuth) return PhotoManager.openSetting();
 
@@ -24,7 +33,7 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
     );
 
     List<AssetEntity> photos = await albums[0].getAssetListPaged(
-      page: 0,
+      page: currentPage,
       size: 24,
     );
 
@@ -33,13 +42,28 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
     for (var asset in photos) {
       temp.add(
         FutureBuilder(
-          future: asset.thumbnailData,
+          future: asset.thumbnailDataWithSize(ThumbnailSize(200, 200)),
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.done) {
-              return Container(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: MemoryImage(snapshot.data as Uint8List),
+              return ClipRRect(
+                borderRadius: BorderRadius.circular(5),
+                child: InkWell(
+                  onTap: () => Navigator.pop(context, snapshot.data),
+                  borderRadius: BorderRadius.circular(5),
+                  splashFactory: NoSplash.splashFactory,
+                  child: Container(
+                    margin: EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: context.theme.greyColor!.withValues(alpha: 0.4),
+                        width: 1,
+                      ),
+                      image: DecorationImage(
+                        image: MemoryImage(snapshot.data as Uint8List),
+                        fit: BoxFit.cover,
+                      ),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
                   ),
                 ),
               );
@@ -51,6 +75,7 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
     }
     setState(() {
       imageList.addAll(temp);
+      currentPage++;
     });
   }
 
@@ -65,7 +90,7 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        elevation: 0,
+        // elevation: 0,
         leading: CustomIconButton(
           onTap: () => Navigator.pop(context),
           icon: Icons.arrow_back,
@@ -76,14 +101,23 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
         ),
         actions: [CustomIconButton(onTap: () {}, icon: Icons.more_vert)],
       ),
-      body: GridView.builder(
-        itemCount: imageList.length,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3,
+      body: Padding(
+        padding: const EdgeInsets.all(5),
+        child: NotificationListener<ScrollNotification>(
+          onNotification: (ScrollNotification scroll) {
+            handleScrollEvent(scroll);
+            return true;
+          },
+          child: GridView.builder(
+            itemCount: imageList.length,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3,
+            ),
+            itemBuilder: (_, index) {
+              return imageList[index];
+            },
+          ),
         ),
-        itemBuilder: (_, index) {
-          return imageList[index];
-        },
       ),
     );
   }
