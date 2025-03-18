@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/routes/routes.dart';
 import 'package:message_app/common/theme/dark_theme.dart';
 import 'package:message_app/common/theme/light_theme.dart';
-import 'package:message_app/feature/auth/pages/user_info_page.dart';
+import 'package:message_app/feature/welcome/pages/welcome_page.dart';
 import 'package:message_app/firebase_options.dart';
 
 void main() async {
@@ -24,7 +24,7 @@ class ChatApp extends StatelessWidget {
       theme: lightTheme(),
       darkTheme: darkTheme(),
       themeMode: ThemeMode.system,
-      home: const UserInfoPage(),
+      home: const WelcomePage(),
       onGenerateRoute: Routes.onGenerateRoute,
     );
   }
