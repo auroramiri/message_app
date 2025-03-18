@@ -28,8 +28,11 @@ class Routes {
               ),
         );
       case userInfo:
-        return MaterialPageRoute(builder: (contex) => const UserInfoPage());
-        case home:
+        final String? profileImageUrl = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (contex) => UserInfoPage(profileImageUrl: profileImageUrl),
+        );
+      case home:
         return MaterialPageRoute(builder: (contex) => const HomePage());
       default:
         return MaterialPageRoute(

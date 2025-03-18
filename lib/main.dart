@@ -40,9 +40,7 @@ class ChatApp extends ConsumerWidget {
             },
             loading: () {
               return Scaffold(
-                body: Center(
-                  child: Image.asset('assets/images/playstore.png', width: 50),
-                ),
+                body: Center(child: Image.asset('assets/images/playstore.png')),
               );
             },
           ),
