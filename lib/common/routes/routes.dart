@@ -4,9 +4,11 @@ import 'package:message_app/feature/auth/pages/login_page.dart';
 import 'package:message_app/feature/auth/pages/user_info_page.dart';
 import 'package:message_app/feature/auth/pages/verification_page.dart';
 import 'package:message_app/feature/chat/pages/chat_page.dart';
+import 'package:message_app/feature/chat/pages/profile_page.dart';
 import 'package:message_app/feature/contact/pages/contact_page.dart';
 import 'package:message_app/feature/home/pages/home_page.dart';
 import 'package:message_app/feature/welcome/pages/welcome_page.dart';
+import 'package:page_transition/page_transition.dart';
 
 class Routes {
   static const String welcome = 'welcome';
@@ -16,6 +18,7 @@ class Routes {
   static const String home = 'home';
   static const String contact = 'contact';
   static const String chat = 'chat';
+  static const String profile = 'profile';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -44,6 +47,13 @@ class Routes {
       case chat:
         final UserModel user = settings.arguments as UserModel;
         return MaterialPageRoute(builder: (contex) => ChatPage(user: user));
+      case profile:
+        final UserModel user = settings.arguments as UserModel;
+        return PageTransition(
+          child: ProfilePage(user: user),
+          type: PageTransitionType.fade,
+          duration: Duration(milliseconds: 800),
+        );
       default:
         return MaterialPageRoute(
           builder:

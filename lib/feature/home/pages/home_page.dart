@@ -46,8 +46,8 @@ class _HomePageState extends ConsumerState<HomePage> {
           title: Text('Бундъварка', style: TextStyle(letterSpacing: 1)),
           elevation: 1,
           actions: [
-            CustomIconButton(onTap: () {}, icon: Icons.search),
-            CustomIconButton(onTap: () {}, icon: Icons.more_vert),
+            CustomIconButton(onPressed: () {}, icon: Icons.search),
+            CustomIconButton(onPressed: () {}, icon: Icons.more_vert),
           ],
           bottom: TabBar(
             indicatorWeight: 3,

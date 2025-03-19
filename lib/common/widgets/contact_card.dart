@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -23,7 +24,7 @@ class ContactCard extends StatelessWidget {
         radius: 20,
         backgroundImage:
             contactSource.profileImageUrl.isNotEmpty
-                ? NetworkImage(contactSource.profileImageUrl)
+                ? CachedNetworkImageProvider(contactSource.profileImageUrl)
                 : null,
         child:
             contactSource.profileImageUrl.isEmpty

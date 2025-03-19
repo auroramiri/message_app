@@ -92,14 +92,14 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         // elevation: 0,
         leading: CustomIconButton(
-          onTap: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
           icon: Icons.arrow_back,
         ),
         title: Text(
           'Бундъварка',
           style: TextStyle(color: context.theme.authAppbarTextColor),
         ),
-        actions: [CustomIconButton(onTap: () {}, icon: Icons.more_vert)],
+        actions: [CustomIconButton(onPressed: () {}, icon: Icons.more_vert)],
       ),
       body: Padding(
         padding: const EdgeInsets.all(5),

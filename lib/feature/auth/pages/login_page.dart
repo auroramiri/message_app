@@ -109,7 +109,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           style: TextStyle(color: context.theme.authAppbarTextColor),
         ),
         centerTitle: true,
-        actions: [CustomIconButton(onTap: () {}, icon: Icons.more_vert)],
+        actions: [CustomIconButton(onPressed: () {}, icon: Icons.more_vert)],
       ),
       body: Column(
         children: [

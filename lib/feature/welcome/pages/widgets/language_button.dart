@@ -33,7 +33,7 @@ class LanguageButton extends StatelessWidget {
                 children: [
                   const SizedBox(width: 20),
                   CustomIconButton(
-                    onTap: () => Navigator.of(context).pop(),
+                    onPressed: () => Navigator.of(context).pop(),
                     icon: Icons.close_outlined,
                   ),
                   const SizedBox(width: 10),
@@ -80,13 +80,13 @@ class LanguageButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: context.theme.langBtnBgColor,
+      color: context.theme.langBgColor,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         onTap: () => showBottomSheet(context),
         borderRadius: BorderRadius.circular(20),
         splashFactory: NoSplash.splashFactory,
-        highlightColor: context.theme.langBtnHighlightColor,
+        highlightColor: context.theme.langHightlightColor,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Row(

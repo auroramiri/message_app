@@ -47,8 +47,8 @@ class ContactPage extends ConsumerWidget {
           ],
         ),
         actions: [
-          CustomIconButton(onTap: () {}, icon: Icons.search),
-          CustomIconButton(onTap: () {}, icon: Icons.more_vert),
+          CustomIconButton(onPressed: () {}, icon: Icons.search),
+          CustomIconButton(onPressed: () {}, icon: Icons.more_vert),
         ],
       ),
       body: ref

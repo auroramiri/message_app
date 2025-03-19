@@ -36,7 +36,7 @@ class VerificationPage extends ConsumerWidget {
           style: TextStyle(color: context.theme.authAppbarTextColor),
         ),
         centerTitle: true,
-        actions: [CustomIconButton(onTap: () {}, icon: Icons.more_vert)],
+        actions: [CustomIconButton(onPressed: () {}, icon: Icons.more_vert)],
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.symmetric(horizontal: 20),
