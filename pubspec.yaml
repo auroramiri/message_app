@@ -45,6 +45,7 @@ dependencies:
   photo_manager: ^3.6.4
   flutter_contacts: ^1.1.9+2
   url_launcher: ^6.3.1
+  firebase_database: ^11.3.4
 
 flutter_native_splash:
   color: "#FFFFFF"

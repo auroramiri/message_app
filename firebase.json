@@ -1,1 +1,18 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"message-app-d512b","appId":"1:350338321103:android:aad7dbf182bf59a57105ba","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"message-app-d512b","configurations":{"android":"1:350338321103:android:aad7dbf182bf59a57105ba","ios":"1:350338321103:ios:1211dbd354d77fbb7105ba"}}}}}}
+{
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ],
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run lint"
+      ]
+    }
+  ]
+}

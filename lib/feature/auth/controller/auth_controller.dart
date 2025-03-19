@@ -19,6 +19,14 @@ class AuthController {
 
   AuthController({required this.ref, required this.authRepository});
 
+  Stream<UserModel> getUserPrecenceStatus({required String uid}) {
+    return authRepository.getUserPrecenceStatus(uid: uid);
+  }
+
+  void updateUserPrecence() {
+    return authRepository.updateUserPrecence();
+  }
+
   Future<UserModel?> getCurrentUserInfo() async {
     UserModel? user = await authRepository.getCurrentUserInfo();
     return user;
