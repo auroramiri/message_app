@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/routes/routes.dart';
 import 'package:message_app/common/theme/dark_theme.dart';
@@ -10,7 +11,8 @@ import 'package:message_app/feature/welcome/pages/welcome_page.dart';
 import 'package:message_app/firebase_options.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const ProviderScope(child: ChatApp()));
 }
@@ -30,6 +32,7 @@ class ChatApp extends ConsumerWidget {
           .watch(userInfoAuthProvider)
           .when(
             data: (user) {
+              FlutterNativeSplash.remove();
               if (user == null) return const WelcomePage();
               return HomePage();
             },
@@ -39,9 +42,7 @@ class ChatApp extends ConsumerWidget {
               );
             },
             loading: () {
-              return Scaffold(
-                body: Center(child: Image.asset('assets/images/playstore.png')),
-              );
+              return SizedBox();
             },
           ),
       onGenerateRoute: Routes.onGenerateRoute,
