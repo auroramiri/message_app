@@ -9,11 +9,24 @@ ThemeData darkTheme() {
     scaffoldBackgroundColor: Coloors.backgroundDark,
     extensions: [CustomThemeExtension.darkMode],
     appBarTheme: const AppBarTheme(
-      titleTextStyle: TextStyle(fontSize: 18),
+      backgroundColor: Coloors.greyBackground,
+      titleTextStyle: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: Coloors.greyDark,
+      ),
       systemOverlayStyle: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ),
+      iconTheme: IconThemeData(color: Coloors.greyDark),
+    ),
+    tabBarTheme: TabBarTheme(
+      indicator: UnderlineTabIndicator(
+        borderSide: BorderSide(color: Coloors.blueDark, width: 2),
+      ),
+      unselectedLabelColor: Coloors.greyDark,
+      labelColor: Coloors.blueDark,
     ),
     colorScheme: base.colorScheme.copyWith(surface: Coloors.backgroundDark),
     elevatedButtonTheme: ElevatedButtonThemeData(
@@ -35,6 +48,10 @@ ThemeData darkTheme() {
     dialogTheme: DialogThemeData(
       backgroundColor: Coloors.greyBackground,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    ),
+    floatingActionButtonTheme: FloatingActionButtonThemeData(
+      backgroundColor: Coloors.blueDark,
+      foregroundColor: Colors.white,
     ),
   );
 }
