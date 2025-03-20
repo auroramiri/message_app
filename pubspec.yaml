@@ -48,6 +48,10 @@ dependencies:
   firebase_database: ^11.3.4
   page_transition: ^2.2.1
   cached_network_image: ^3.4.1
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  custom_clippers: ^2.0.0
+  shimmer: ^3.0.0
 
 flutter_native_splash:
   color: "#FFFFFF"
