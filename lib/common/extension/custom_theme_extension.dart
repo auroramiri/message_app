@@ -50,7 +50,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     blueColor: Coloors.blueLight,
     langBgColor: Color(0xFFF7F8FA),
     langHightlightColor: Color(0xFFE8E8ED),
-    authAppbarTextColor: Coloors.greenLight,
+    authAppbarTextColor: Coloors.blueLight,
     photoIconBgColor: Color(0xFFF1F1F1),
     photoIconColor: Color(0xFF9DAAB3),
     profilePageBg: Color(0xFFF7F8FA),

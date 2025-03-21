@@ -30,10 +30,9 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
 
   void sendImageMessageFromGallery() async {
     final image = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const ImagePickerPage(),
-        ));
+      context,
+      MaterialPageRoute(builder: (_) => const ImagePickerPage()),
+    );
 
     if (image != null) {
       sendFileMessage(image, MessageType.image);
@@ -42,12 +41,9 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
   }
 
   void sendFileMessage(var file, MessageType messageType) async {
-    ref.read(chatControllerProvider).sendFileMessage(
-          context,
-          file,
-          widget.receiverId,
-          messageType,
-        );
+    ref
+        .read(chatControllerProvider)
+        .sendFileMessage(context, file, widget.receiverId, messageType);
     await Future.delayed(const Duration(milliseconds: 500));
     SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
       widget.scrollController.animateTo(
@@ -60,7 +56,9 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
 
   void sendTextMessage() async {
     if (isMessageIconEnabled) {
-      ref.read(chatControllerProvider).sendTextMessage(
+      ref
+          .read(chatControllerProvider)
+          .sendTextMessage(
             context: context,
             textMessage: messageController.text,
             receiverId: widget.receiverId,
@@ -98,12 +96,7 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
           ),
         ),
         const SizedBox(height: 5),
-        Text(
-          text,
-          style: TextStyle(
-            color: context.theme.greyColor,
-          ),
-        ),
+        Text(text, style: TextStyle(color: context.theme.greyColor)),
       ],
     );
   }
@@ -175,7 +168,7 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                         onPressed: () {},
                         icon: Icons.location_on,
                         text: 'Location',
-                        background: const Color(0xFF1FA855),
+                        background: Coloors.blueDark,
                       ),
                       iconWithText(
                         onPressed: () {},
@@ -231,11 +224,19 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                         RotatedBox(
                           quarterTurns: 45,
                           child: CustomIconButton(
-                            onPressed: () => setState(
-                              () => cardHeight == 0 ? cardHeight = 220 : cardHeight = 0,
-                            ),
-                            icon: cardHeight == 0 ? Icons.attach_file : Icons.close,
-                            iconColor: Theme.of(context).listTileTheme.iconColor,
+                            onPressed:
+                                () => setState(
+                                  () =>
+                                      cardHeight == 0
+                                          ? cardHeight = 220
+                                          : cardHeight = 0,
+                                ),
+                            icon:
+                                cardHeight == 0
+                                    ? Icons.attach_file
+                                    : Icons.close,
+                            iconColor:
+                                Theme.of(context).listTileTheme.iconColor,
                           ),
                         ),
                         CustomIconButton(
@@ -251,7 +252,10 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
               const SizedBox(width: 5),
               CustomIconButton(
                 onPressed: sendTextMessage,
-                icon: isMessageIconEnabled ? Icons.send_outlined : Icons.mic_none_outlined,
+                icon:
+                    isMessageIconEnabled
+                        ? Icons.send_outlined
+                        : Icons.mic_none_outlined,
                 background: Coloors.blueDark,
                 iconColor: Colors.white,
               ),

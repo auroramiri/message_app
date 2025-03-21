@@ -9,7 +9,7 @@
 
     <application
         android:enableOnBackInvokedCallback="true"
-        android:label="message_app"
+        android:label="Бундъварка"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
