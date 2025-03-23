@@ -1,16 +1,6 @@
-const {onValueUpdated} = require("firebase-functions/v2/database");
-const admin = require('firebase-admin');
-admin.initializeApp();
+import { firestore, messaging } from './firebase.js';
+import { lastSeenStatus } from './lastSeenStatus.js';
+import { sendNotification } from './sendNotification.js';
 
-const firestore = admin.firestore();
-
-exports.onUserStateChange = onValueUpdated('/{uid}/active', async (event) => {
-    const isActive = event.data.after.val();
-    const uid = event.params.uid;
-    const firestoreRef = firestore.doc(`users/${uid}`);
-
-    return firestoreRef.update({
-        active: isActive,
-        lastSeen: Date.now(),
-    });
-});
+// Экспорт функций
+export { lastSeenStatus, sendNotification };

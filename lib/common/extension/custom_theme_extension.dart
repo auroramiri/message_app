@@ -45,7 +45,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
   });
 
   static const lightMode = CustomThemeExtension(
-    circleImageColor: Color(0xFF25D366),
+    circleImageColor: Coloors.blueLight,
     greyColor: Coloors.greyLight,
     blueColor: Coloors.blueLight,
     langBgColor: Color(0xFFF7F8FA),
@@ -76,7 +76,7 @@ class CustomThemeExtension extends ThemeExtension<CustomThemeExtension> {
     chatTextFieldBg: Coloors.greyBackground,
     chatPageBgColor: Color(0xFF081419),
     chatPageDoodleColor: Color(0xFF172428),
-    senderChatCardBg: Color(0xFF005C4B),
+    senderChatCardBg: Coloors.blueLight,
     receiverChatCardBg: Coloors.greyBackground,
     yellowCardBgColor: Color(0xFF222E35),
     yellowCardTextColor: Color(0xFFFFD279),
