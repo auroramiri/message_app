@@ -8,6 +8,7 @@ class MessageModel {
   final DateTime timeSent;
   final String messageId;
   final bool isSeen;
+  final bool notificationSent;
 
   MessageModel({
     required this.senderId,
@@ -17,6 +18,7 @@ class MessageModel {
     required this.timeSent,
     required this.messageId,
     required this.isSeen,
+    required this.notificationSent,
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map) {
@@ -28,6 +30,7 @@ class MessageModel {
       timeSent: DateTime.fromMillisecondsSinceEpoch(map["timeSent"]),
       messageId: map["messageId"],
       isSeen: map["isSeen"] ?? false,
+      notificationSent: false,
     );
   }
 
@@ -40,6 +43,7 @@ class MessageModel {
       "timeSent": timeSent.millisecondsSinceEpoch,
       "messageId": messageId,
       "isSeen": isSeen,
+      "notificationSent": notificationSent,
     };
   }
 }

@@ -190,6 +190,7 @@ class ChatRepository {
       timeSent: timeSent,
       messageId: textMessageId,
       isSeen: false,
+      notificationSent: false,
     );
 
     // sender

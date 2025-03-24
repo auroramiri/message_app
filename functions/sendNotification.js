@@ -2,21 +2,40 @@ import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { firestore, messaging } from './firebase.js';
 
 export const sendNotification = onDocumentCreated('users/{receiverId}/chats/{senderId}/messages/{messageId}', async (snap) => {
-    console.log('Snap:', snap); // Логирование snap
-
+    const messageId = snap.params.messageId;
     const receiverId = snap.params.receiverId;
     const senderId = snap.params.senderId;
-    const messageId = snap.params.messageId;
 
-    console.log('Receiver ID:', receiverId);
-    console.log('Sender ID:', senderId);
-    console.log('Message ID:', messageId);
+    const messageDocReceiver = await firestore.collection(`users/${receiverId}/chats/${senderId}/messages`).doc(messageId).get();
+    const messageDocSender = await firestore.collection(`users/${senderId}/chats/${receiverId}/messages`).doc(messageId).get();
+
+    if (!messageDocReceiver.exists || !messageDocSender.exists) {
+        console.log('Message document does not exist:', messageId);
+        return null;
+    }
+
+    const messageDataReceiver = messageDocReceiver.data();
+    const messageDataSender = messageDocSender.data();
+
+    const messageTitle = messageDataReceiver.textMessage || 'Unknown message';
+    const messageSender = messageDataReceiver.senderId;
+    const messageReceiver = messageDataReceiver.receiverId;
+
+    // Проверяем, отправлялось ли уже уведомление
+    if (messageDataReceiver.notificationSent && messageDataSender.notificationSent) {
+        console.log('Notification already sent for message:', messageId);
+        return null;
+    }
+
+    // Получаем имя отправителя
+    const senderDoc = await firestore.collection('users').doc(messageSender).get();
+    const senderUsername = senderDoc.exists ? senderDoc.data().username : 'Unknown';
 
     // Получаем документ пользователя-получателя
-    const userDoc = await firestore.collection('users').doc(receiverId).get();
+    const userDoc = await firestore.collection('users').doc(messageReceiver).get();
 
     if (!userDoc.exists) {
-        console.log('Пользователь с uid не найден:', receiverId);
+        console.log('Пользователь с uid не найден:', messageReceiver);
         return null;
     }
 
@@ -24,35 +43,28 @@ export const sendNotification = onDocumentCreated('users/{receiverId}/chats/{sen
     const tokens = userData.fcmTokens;
 
     if (!tokens || tokens.length === 0) {
-        console.log('FCM токен для пользователя не найден:', receiverId);
+        console.log('FCM токен для пользователя не найден:', messageReceiver);
         return null;
     }
 
     const token = tokens[0]; // Выбираем первый FCM токен из массива
 
-    console.log('FCM токен:', token);
-
-    // Получаем имя отправителя
-    const senderDoc = await firestore.collection('users').doc(senderId).get();
-    const senderUsername = senderDoc.exists ? senderDoc.data().username : 'Unknown';
-    // Получаем текст сообщения
-    const messageDoc = await firestore.collection(`users/${receiverId}/chats/${senderId}/messages`).doc(messageId).get();
-    console.log('Сообщение:', messageDoc.exists ? messageDoc.data().textMessage : 'Unknown message');
-
-    // Получаем заголовок сообщения
-    const messageTitle = messageDoc.exists ? messageDoc.data().textMessage : 'Unknown message';
-
     const message = {
         notification: {
-            title: messageTitle,
-            body: `Вы получили новое сообщение от ${senderUsername}!`,
+            title: `Вы получили новое сообщение от ${senderUsername}!`,
+            body: messageTitle,
         },
-        token: token // Ensure that this token is correctly set with the FCM token
+        token: token
     };
 
     return messaging.send(message)
-        .then(response => {
+        .then(async (response) => {
             console.log('Успешно отправлено сообщение:', response);
+
+            // Отмечаем, что уведомление было отправлено в обеих коллекциях
+            await messageDocReceiver.ref.update({ notificationSent: true });
+            await messageDocSender.ref.update({ notificationSent: true });
+
             return null;
         })
         .catch(error => {
