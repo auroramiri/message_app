@@ -16,6 +16,8 @@ class CustomTextField extends StatelessWidget {
     this.onChanged,
     this.fontSize,
     this.autoFocus,
+    this.enabled,
+    this.focusNode,
   });
 
   final TextEditingController? controller;
@@ -29,10 +31,14 @@ class CustomTextField extends StatelessWidget {
   final Function(String)? onChanged;
   final double? fontSize;
   final bool? autoFocus;
+  final bool? enabled;
+  final FocusNode? focusNode;
 
   @override
   Widget build(BuildContext context) {
     return TextFormField(
+      focusNode: focusNode,
+      enabled: enabled,
       onTap: onTap,
       controller: controller,
       readOnly: readOnly ?? false,

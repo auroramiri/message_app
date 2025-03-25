@@ -8,27 +8,28 @@ class CustomListTile extends StatelessWidget {
     required this.leading,
     this.subTitle,
     this.trailing,
+    this.onTap,
   });
 
   final String title;
   final IconData leading;
   final String? subTitle;
   final Widget? trailing;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      onTap: () {},
+      onTap: onTap,
       contentPadding: const EdgeInsets.fromLTRB(25, 5, 10, 5),
       title: Text(title),
-      subtitle: subTitle != null
-          ? Text(
-              subTitle!,
-              style: TextStyle(
-                color: context.theme.greyColor,
-              ),
-            )
-          : null,
+      subtitle:
+          subTitle != null
+              ? Text(
+                subTitle!,
+                style: TextStyle(color: context.theme.greyColor),
+              )
+              : null,
       leading: Icon(leading),
       trailing: trailing,
     );

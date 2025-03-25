@@ -55,13 +55,31 @@ class _HomePageState extends ConsumerState<HomePage> {
             splashFactory: NoSplash.splashFactory,
             tabs: [
               Tab(text: 'CHATS'),
-              Tab(text: 'SETTINGS'),
               Tab(text: 'PROFILE'),
+              Tab(text: 'SETTINGS'),
             ],
           ),
         ),
         body: TabBarView(
-          children: [ChatHomePage(), StatusHomePage(), CallHomePage()],
+          children: [
+            ChatHomePage(),
+            ref
+                .watch(userInfoAuthProvider)
+                .when(
+                  loading:
+                      () => const Center(child: CircularProgressIndicator()),
+                  error:
+                      (error, stack) => Center(child: Text('Ошибка: $error')),
+                  data:
+                      (user) =>
+                          user != null
+                              ? UserProfilePage()
+                              : const Center(
+                                child: Text('Пользователь не найден'),
+                              ),
+                ),
+            StatusHomePage(),
+          ],
         ),
       ),
     );
