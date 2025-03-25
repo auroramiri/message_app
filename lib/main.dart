@@ -10,6 +10,7 @@ import 'package:message_app/common/theme/dark_theme.dart';
 import 'package:message_app/common/theme/light_theme.dart';
 import 'package:message_app/feature/auth/controller/auth_controller.dart';
 import 'package:message_app/feature/home/pages/home_page.dart';
+import 'package:message_app/feature/upadateChecker/github_update_checker.dart';
 import 'package:message_app/feature/welcome/pages/welcome_page.dart';
 import 'package:message_app/firebase_options.dart';
 import 'package:message_app/repositories/notification/background_message_handler.dart';
@@ -42,6 +43,7 @@ class _ChatAppState extends ConsumerState<ChatApp> {
   void initState() {
     super.initState();
     _initializeNotifications();
+    _checkForUpdates(context);
   }
 
   Future<void> _initializeNotifications() async {
@@ -53,9 +55,7 @@ class _ChatAppState extends ConsumerState<ChatApp> {
 
     // Initialize with the new callback
     const initializationSettings = InitializationSettings(
-      android: AndroidInitializationSettings(
-        '@mipmap/ic_launcher', // Replace with your app icon
-      ),
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
       iOS: DarwinInitializationSettings(
         requestAlertPermission: true,
         requestBadgePermission: true,
@@ -107,6 +107,15 @@ class _ChatAppState extends ConsumerState<ChatApp> {
 
     // Handle background messages
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  }
+
+  Future<void> _checkForUpdates(BuildContext context) async {
+    final hasUpdate = await GitHubUpdateChecker.checkForUpdates();
+    if (hasUpdate) {
+      if (context.mounted) {
+        GitHubUpdateChecker.showUpdateDialog(context);
+      }
+    }
   }
 
   void _showNotification(RemoteNotification notification) async {

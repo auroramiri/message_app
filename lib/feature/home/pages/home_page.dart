@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/auth/controller/auth_controller.dart';
-import 'package:message_app/feature/home/pages/call_home_page.dart';
+import 'package:message_app/feature/home/pages/profile_home_page.dart';
 import 'package:message_app/feature/home/pages/chat_home_page.dart';
-import 'package:message_app/feature/home/pages/status_home_page.dart';
+import 'package:message_app/feature/home/pages/settings_home_page.dart';
 
 class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
@@ -53,7 +53,11 @@ class _HomePageState extends ConsumerState<HomePage> {
             indicatorWeight: 3,
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             splashFactory: NoSplash.splashFactory,
-            tabs: [Tab(text: 'CHATS'), Tab(text: 'STATUS'), Tab(text: 'CALLS')],
+            tabs: [
+              Tab(text: 'CHATS'),
+              Tab(text: 'SETTINGS'),
+              Tab(text: 'PROFILE'),
+            ],
           ),
         ),
         body: TabBarView(

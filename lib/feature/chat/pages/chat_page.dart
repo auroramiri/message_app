@@ -1,10 +1,10 @@
 import 'dart:math';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:custom_clippers/custom_clippers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:message_app/common/helper/last_seen_message.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -17,8 +17,6 @@ import 'package:message_app/feature/chat/widgets/message_card.dart';
 import 'package:message_app/feature/chat/widgets/show_date_card.dart';
 import 'package:message_app/feature/chat/widgets/yellow_card.dart';
 
-import '../../../common/helper/last_seen_message.dart';
-
 final pageStorageBucket = PageStorageBucket();
 
 class ChatPage extends ConsumerWidget {
@@ -29,6 +27,15 @@ class ChatPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Подписываемся на изменения в потоке сообщений
+    ref.listen(chatControllerProvider, (previous, next) {
+      // Прокручиваем вниз, когда поток сообщений обновляется
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (scrollController.hasClients) {
+          scrollController.jumpTo(scrollController.position.maxScrollExtent);
+        }
+      });
+    });
     return Scaffold(
       backgroundColor: context.theme.chatPageBgColor,
       appBar: AppBar(
