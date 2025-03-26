@@ -27,9 +27,7 @@ class ChatPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Подписываемся на изменения в потоке сообщений
     ref.listen(chatControllerProvider, (previous, next) {
-      // Прокручиваем вниз, когда поток сообщений обновляется
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (scrollController.hasClients) {
           scrollController.jumpTo(scrollController.position.maxScrollExtent);
