@@ -116,119 +116,162 @@ class ChatRepository {
 
   // New method to delete a single message
   Future<void> deleteMessage({
-    required String receiverId,
-    required String messageId,
-    required BuildContext context,
-  }) async {
-    try {
-      // Delete message from sender's collection
-      await firestore
+  String? receiverId,
+  required String messageId,
+  required BuildContext context,
+}) async {
+  try {
+    // First, we need to find the message to get the receiverId if not provided
+    String actualReceiverId = receiverId ?? '';
+    
+    if (actualReceiverId.isEmpty) {
+      // Search for the message in all chats to find the receiverId
+      final userChats = await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
           .collection('chats')
-          .doc(receiverId)
-          .collection('messages')
-          .doc(messageId)
-          .delete();
-
-      // Delete message from receiver's collection
-      await firestore
-          .collection('users')
-          .doc(receiverId)
-          .collection('chats')
-          .doc(auth.currentUser!.uid)
-          .collection('messages')
-          .doc(messageId)
-          .delete();
-
-      // Update last message if needed
-      final messages =
-          await firestore
-              .collection('users')
-              .doc(auth.currentUser!.uid)
-              .collection('chats')
-              .doc(receiverId)
-              .collection('messages')
-              .orderBy('timeSent', descending: true)
-              .limit(1)
-              .get();
-
-      if (messages.docs.isNotEmpty) {
-        final lastMessage = MessageModel.fromMap(messages.docs.first.data());
-
-        // Get user data
-        final currentUserData =
-            await firestore
-                .collection('users')
-                .doc(auth.currentUser!.uid)
-                .get();
-
-        final receiverData =
-            await firestore.collection('users').doc(receiverId).get();
-
-        if (currentUserData.exists && receiverData.exists) {
-          final senderData = UserModel.fromMap(currentUserData.data()!);
-          final receiverUserData = UserModel.fromMap(receiverData.data()!);
-
-          // Format last message text based on message type
-          String lastMessageText;
-          switch (lastMessage.type) {
-            case MessageType.text:
-              lastMessageText = lastMessage.textMessage;
-              break;
-            case MessageType.image:
-              lastMessageText = '📸 Photo message';
-              break;
-            case MessageType.audio:
-              lastMessageText = '🎵 Voice message';
-              break;
-            case MessageType.video:
-              lastMessageText = '🎬 Video message';
-              break;
-            case MessageType.gif:
-              lastMessageText = '🎭 GIF message';
-              break;
-          }
-
-          // Update last message for both users
-          saveAsLastMessage(
-            senderUserData: senderData,
-            receiverUserData: receiverUserData,
-            lastMessage: lastMessageText,
-            timeSent: lastMessage.timeSent,
-            receiverId: receiverId,
-          );
-        }
-      } else {
-        // If no messages left, update with "No messages"
-        final currentUserData =
-            await firestore
-                .collection('users')
-                .doc(auth.currentUser!.uid)
-                .get();
-
-        final receiverData =
-            await firestore.collection('users').doc(receiverId).get();
-
-        if (currentUserData.exists && receiverData.exists) {
-          final senderData = UserModel.fromMap(currentUserData.data()!);
-          final receiverUserData = UserModel.fromMap(receiverData.data()!);
-
-          saveAsLastMessage(
-            senderUserData: senderData,
-            receiverUserData: receiverUserData,
-            lastMessage: "No messages",
-            timeSent: DateTime.now(),
-            receiverId: receiverId,
-          );
+          .get();
+      
+      bool messageFound = false;
+      
+      // Iterate through each chat
+      for (var chatDoc in userChats.docs) {
+        final chatId = chatDoc.id;
+        
+        // Check if this message exists in this chat
+        final messageDoc = await firestore
+            .collection('users')
+            .doc(auth.currentUser!.uid)
+            .collection('chats')
+            .doc(chatId)
+            .collection('messages')
+            .doc(messageId)
+            .get();
+        
+        if (messageDoc.exists) {
+          actualReceiverId = chatId;
+          messageFound = true;
+          break;
         }
       }
-    } catch (e) {
-      if (context.mounted) {
-        showAllertDialog(context: context, message: e.toString());
+      
+      if (!messageFound) {
+        throw Exception('Message not found');
       }
     }
+    
+    // Now we have the receiverId, proceed with deletion
+    
+    // Delete message from sender's collection
+    await firestore
+        .collection('users')
+        .doc(auth.currentUser!.uid)
+        .collection('chats')
+        .doc(actualReceiverId)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+
+    // Delete message from receiver's collection
+    await firestore
+        .collection('users')
+        .doc(actualReceiverId)
+        .collection('chats')
+        .doc(auth.currentUser!.uid)
+        .collection('messages')
+        .doc(messageId)
+        .delete();
+
+    // Update last message if needed
+    final messages = await firestore
+        .collection('users')
+        .doc(auth.currentUser!.uid)
+        .collection('chats')
+        .doc(actualReceiverId)
+        .collection('messages')
+        .orderBy('timeSent', descending: true)
+        .limit(1)
+        .get();
+
+    if (messages.docs.isNotEmpty) {
+      final lastMessage = MessageModel.fromMap(messages.docs.first.data());
+
+      // Get user data
+      final currentUserData = await firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .get();
+
+      final receiverData = await firestore
+          .collection('users')
+          .doc(actualReceiverId)
+          .get();
+
+      if (currentUserData.exists && receiverData.exists) {
+        final senderData = UserModel.fromMap(currentUserData.data()!);
+        final receiverUserData = UserModel.fromMap(receiverData.data()!);
+
+        // Format last message text based on message type
+        String lastMessageText;
+        switch (lastMessage.type) {
+          case MessageType.text:
+            lastMessageText = lastMessage.textMessage;
+            break;
+          case MessageType.image:
+            lastMessageText = '📸 Photo message';
+            break;
+          case MessageType.audio:
+            lastMessageText = '🎵 Voice message';
+            break;
+          case MessageType.video:
+            lastMessageText = '🎬 Video message';
+            break;
+          case MessageType.gif:
+            lastMessageText = '🎭 GIF message';
+            break;
+        }
+
+        // Update last message for both users
+        saveAsLastMessage(
+          senderUserData: senderData,
+          receiverUserData: receiverUserData,
+          lastMessage: lastMessageText,
+          timeSent: lastMessage.timeSent,
+          receiverId: actualReceiverId,
+        );
+      }
+    } else {
+      // If no messages left, update with "No messages"
+      final currentUserData = await firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .get();
+
+      final receiverData = await firestore
+          .collection('users')
+          .doc(actualReceiverId)
+          .get();
+
+      if (currentUserData.exists && receiverData.exists) {
+        final senderData = UserModel.fromMap(currentUserData.data()!);
+        final receiverUserData = UserModel.fromMap(receiverData.data()!);
+
+        saveAsLastMessage(
+          senderUserData: senderData,
+          receiverUserData: receiverUserData,
+          lastMessage: "No messages",
+          timeSent: DateTime.now(),
+          receiverId: actualReceiverId,
+        );
+      }
+    }
+  } catch (e) {
+    log('Error deleting message: $e');
+    if (context.mounted) {
+      showAllertDialog(context: context, message: e.toString());
+    }
   }
+}
 
   Future<void> setChatBackgroundImage({
     required var imageFile,
@@ -616,4 +659,93 @@ class ChatRepository {
       log("Error saving last message: $e");
     }
   }
+
+// Add this method to your ChatRepository class
+Future<void> markMessageAsSeen(String senderId, String messageId) async {
+  try {
+    // Update in sender's collection
+    await firestore
+        .collection('users')
+        .doc(senderId)
+        .collection('chats')
+        .doc(auth.currentUser!.uid)
+        .collection('messages')
+        .doc(messageId)
+        .update({
+      'isSeen': true,
+      'seenTime': DateTime.now().millisecondsSinceEpoch,
+    });
+
+    // Update in receiver's (current user's) collection
+    await firestore
+        .collection('users')
+        .doc(auth.currentUser!.uid)
+        .collection('chats')
+        .doc(senderId)
+        .collection('messages')
+        .doc(messageId)
+        .update({
+      'isSeen': true,
+      'seenTime': DateTime.now().millisecondsSinceEpoch,
+    });
+  } catch (e) {
+    log('Error marking message as seen: $e');
+  }
+}
+
+// Add this method to automatically mark all messages as seen when opening a chat
+Future<void> markAllMessagesAsSeen(String senderId) async {
+  try {
+    // Get all unseen messages from this sender
+    final messages = await firestore
+        .collection('users')
+        .doc(auth.currentUser!.uid)
+        .collection('chats')
+        .doc(senderId)
+        .collection('messages')
+        .where('senderId', isEqualTo: senderId)
+        .where('isSeen', isEqualTo: false)
+        .get();
+
+    // Create a batch to update all messages at once
+    final batch = firestore.batch();
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    // Add each message to the batch for updating in receiver's collection
+    for (var doc in messages.docs) {
+      final messageRef = firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .collection('chats')
+          .doc(senderId)
+          .collection('messages')
+          .doc(doc.id);
+      
+      batch.update(messageRef, {
+        'isSeen': true,
+        'seenTime': now,
+      });
+
+      // Also update in sender's collection
+      final senderMessageRef = firestore
+          .collection('users')
+          .doc(senderId)
+          .collection('chats')
+          .doc(auth.currentUser!.uid)
+          .collection('messages')
+          .doc(doc.id);
+      
+      batch.update(senderMessageRef, {
+        'isSeen': true,
+        'seenTime': now,
+      });
+    }
+
+    // Commit the batch
+    await batch.commit();
+  } catch (e) {
+    log('Error marking all messages as seen: $e');
+  }
+}
+
 }

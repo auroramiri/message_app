@@ -16,10 +16,8 @@ class ChatController {
   final ChatRepository _chatRepository;
   final Ref ref;
 
-  ChatController({
-    required ChatRepository chatRepository,
-    required this.ref,
-  }) : _chatRepository = chatRepository;
+  ChatController({required ChatRepository chatRepository, required this.ref})
+    : _chatRepository = chatRepository;
 
   void sendFileMessage(
     BuildContext context,
@@ -95,9 +93,8 @@ class ChatController {
     return _chatRepository.deleteChat(receiverId: receiverId, context: context);
   }
 
-  // Delete a single message
   Future<void> deleteMessage({
-    required String receiverId,
+    String? receiverId,
     required String messageId,
     required BuildContext context,
   }) async {
@@ -106,5 +103,13 @@ class ChatController {
       messageId: messageId,
       context: context,
     );
+  }
+
+  Future<void> markMessageAsSeen(String senderId, String messageId) async {
+    return _chatRepository.markMessageAsSeen(senderId, messageId);
+  }
+
+  Future<void> markAllMessagesAsSeen(String senderId) async {
+    return _chatRepository.markAllMessagesAsSeen(senderId);
   }
 }

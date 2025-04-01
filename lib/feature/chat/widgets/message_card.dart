@@ -1,12 +1,16 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:custom_clippers/custom_clippers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/message_model.dart';
+import 'package:message_app/feature/chat/controller/chat_controller.dart';
+import 'dart:developer' as developer;
 
-class MessageCard extends StatelessWidget {
+class MessageCard extends ConsumerWidget {
   const MessageCard({
     super.key,
     required this.isSender,
@@ -18,46 +22,240 @@ class MessageCard extends StatelessWidget {
   final bool haveNip;
   final MessageModel message;
 
-  void _showContextMenu(BuildContext context, Offset tapPosition) {
-    final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
-    final relativeRect = RelativeRect.fromLTRB(
-      tapPosition.dx,
-      tapPosition.dy,
-      overlay.size.width - tapPosition.dx,
-      overlay.size.height - tapPosition.dy,
+  void _showContextMenu(
+    BuildContext context,
+    Offset tapPosition,
+    WidgetRef ref,
+  ) {
+    final RenderBox overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
+
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(tapPosition, tapPosition),
+      Offset.zero & overlay.size,
     );
 
-    showMenu(
+    showMenu<String>(
       context: context,
-      position: relativeRect,
+      position: position,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 2,
       items: [
-        PopupMenuItem(
-          child: const Text('Copy'),
-          onTap: () {
-            // Handle copy action
-          },
+        if (message.type == my_type.MessageType.text)
+          PopupMenuItem<String>(
+            value: 'copy',
+            child: Row(
+              children: [
+                Icon(Icons.copy, size: 20, color: context.theme.greyColor),
+                const SizedBox(width: 10),
+                const Text('Copy'),
+              ],
+            ),
+          ),
+        if (isSender)
+          PopupMenuItem<String>(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                const SizedBox(width: 10),
+                const Text('Delete'),
+              ],
+            ),
+          ),
+        PopupMenuItem<String>(
+          value: 'forward',
+          child: Row(
+            children: [
+              Icon(Icons.forward, size: 20, color: context.theme.greyColor),
+              const SizedBox(width: 10),
+              const Text('Forward'),
+            ],
+          ),
         ),
-        PopupMenuItem(
-          child: const Text('Delete'),
-          onTap: () {
-            // Handle delete action
-          },
-        ),
-        PopupMenuItem(
-          child: const Text('Forward'),
-          onTap: () {
-            // Handle forward action
-          },
-        ),
+        if (message.type == my_type.MessageType.text)
+          PopupMenuItem<String>(
+            value: 'info',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 20,
+                  color: context.theme.greyColor,
+                ),
+                const SizedBox(width: 10),
+                const Text('Info'),
+              ],
+            ),
+          ),
       ],
+    ).then((value) {
+      if (context.mounted) {
+        _handleMenuSelection(context, value, ref);
+      }
+    });
+  }
+
+  void _handleMenuSelection(
+    BuildContext context,
+    String? value,
+    WidgetRef ref,
+  ) async {
+    if (value == null) return;
+
+    switch (value) {
+      case 'copy':
+        if (message.type == my_type.MessageType.text) {
+          await Clipboard.setData(ClipboardData(text: message.textMessage));
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Message copied to clipboard'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+        break;
+
+      case 'delete':
+        if (isSender) {
+          _showDeleteConfirmation(context, ref);
+        }
+        break;
+
+      case 'forward':
+        _handleForwardMessage(context);
+        break;
+
+      case 'info':
+        _showMessageInfo(context);
+        break;
+    }
+  }
+
+  void _showDeleteConfirmation(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('Delete Message'),
+            content: const Text(
+              'Are you sure you want to delete this message?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('CANCEL'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // Close the confirmation dialog
+                  Navigator.pop(dialogContext);
+
+                  // Store the BuildContext for the loading dialog
+                  BuildContext? loadingDialogContext;
+
+                  // Show loading indicator
+                  showDialog(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (ctx) {
+                      loadingDialogContext = ctx;
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  );
+
+                  try {
+                    // Call the delete message method from your controller
+                    await ref
+                        .read(chatControllerProvider)
+                        .deleteMessage(
+                          messageId: message.messageId,
+                          context: context,
+                        );
+
+                    // Close loading indicator if it's still showing
+                    if (loadingDialogContext != null && context.mounted) {
+                      Navigator.of(loadingDialogContext!).pop();
+                      loadingDialogContext = null;
+                    }
+
+                    // Show success message
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Message deleted')),
+                      );
+                    }
+                  } catch (e) {
+                    developer.log('Error deleting message: $e');
+
+                    // Close loading indicator if it's still showing
+                    if (loadingDialogContext != null && context.mounted) {
+                      Navigator.of(loadingDialogContext!).pop();
+                      loadingDialogContext = null;
+                    }
+
+                    // Show error message
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to delete message: $e')),
+                      );
+                    }
+                  }
+                },
+                child: const Text(
+                  'DELETE',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+  }
+
+  void _handleForwardMessage(BuildContext context) {
+    // Navigate to contact selection page for forwarding
+    // You'll need to implement this navigation and selection logic
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Forward feature coming soon')),
+    );
+  }
+
+  void _showMessageInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Message Info'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Sent: ${DateFormat('MMM d, yyyy • h:mm a').format(message.timeSent)}',
+                ),
+                const SizedBox(height: 8),
+                Text('Status: ${message.isSeen ? "Seen" : "Delivered"}'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('CLOSE'),
+              ),
+            ],
+          ),
     );
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
-      onLongPressStart: (details) {
-        _showContextMenu(context, details.globalPosition);
+      onLongPress: () {
+        final RenderBox renderBox = context.findRenderObject() as RenderBox;
+        final position = renderBox.localToGlobal(Offset.zero);
+        _showContextMenu(context, position, ref);
       },
       child: Container(
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
@@ -70,12 +268,7 @@ class MessageCard extends StatelessWidget {
                   : haveNip
                   ? 10
                   : 15,
-          right:
-              isSender
-                  ? haveNip
-                      ? 10
-                      : 15
-                  : 80,
+          right: isSender ? (haveNip ? 10 : 15) : 80,
         ),
         child: ClipPath(
           clipper:
@@ -117,71 +310,115 @@ class MessageCard extends StatelessWidget {
                               ),
                             ),
                           )
-                          : Padding(
-                            padding: EdgeInsets.only(
-                              top: 8,
-                              bottom: 8,
-                              left: isSender ? 10 : 15,
-                              right: isSender ? 15 : 10,
-                            ),
-                            child: Text(
-                              "${message.textMessage}         ",
-                              style: const TextStyle(fontSize: 16),
-                            ),
+                          : Column(
+                            crossAxisAlignment:
+                                isSender
+                                    ? CrossAxisAlignment.end
+                                    : CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: 8,
+                                  left: isSender ? 10 : 15,
+                                  right: isSender ? 15 : 10,
+                                ),
+                                child: Text(
+                                  message.textMessage,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: 5,
+                                  left: isSender ? 10 : 15,
+                                  right: isSender ? 15 : 10,
+                                  top: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      DateFormat.Hm().format(message.timeSent),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: context.theme.greyColor,
+                                      ),
+                                    ),
+                                    if (isSender) const SizedBox(width: 3),
+                                    if (isSender)
+                                      _buildReadStatusIndicator(context),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                 ),
               ),
-              Positioned(
-                bottom: message.type == my_type.MessageType.text ? 8 : 4,
-                right:
-                    message.type == my_type.MessageType.text
-                        ? isSender
-                            ? 15
-                            : 10
-                        : 4,
-                child:
-                    message.type == my_type.MessageType.text
-                        ? Text(
+              if (message.type == my_type.MessageType.image)
+                Positioned(
+                  bottom: 4,
+                  right: 4,
+                  child: Container(
+                    padding: const EdgeInsets.only(
+                      left: 90,
+                      right: 10,
+                      bottom: 10,
+                      top: 14,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: const Alignment(0, -1),
+                        end: const Alignment(1, 1),
+                        colors: [
+                          context.theme.greyColor!.withValues(alpha: 0),
+                          context.theme.greyColor!.withValues(alpha: 0.5),
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(300),
+                        bottomRight: Radius.circular(100),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
                           DateFormat.Hm().format(message.timeSent),
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 11,
-                            color: context.theme.greyColor,
-                          ),
-                        )
-                        : Container(
-                          padding: const EdgeInsets.only(
-                            left: 90,
-                            right: 10,
-                            bottom: 10,
-                            top: 14,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: const Alignment(0, -1),
-                              end: const Alignment(1, 1),
-                              colors: [
-                                context.theme.greyColor!.withValues(alpha: 0),
-                                context.theme.greyColor!.withValues(alpha: 0.5),
-                              ],
-                            ),
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(300),
-                              bottomRight: Radius.circular(100),
-                            ),
-                          ),
-                          child: Text(
-                            DateFormat.Hm().format(message.timeSent),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: Colors.white,
-                            ),
+                            color: Colors.white,
                           ),
                         ),
-              ),
+                        if (isSender) const SizedBox(width: 3),
+                        if (isSender)
+                          _buildReadStatusIndicator(
+                            context,
+                            isImageMessage: true,
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildReadStatusIndicator(
+    BuildContext context, {
+    bool isImageMessage = false,
+  }) {
+    final Color baseColor =
+        isImageMessage ? Colors.white : context.theme.greyColor!;
+    final Color seenColor = Colors.blue;
+
+    return Icon(
+      message.isSeen ? Icons.done_all : Icons.done,
+      size: 14,
+      color: message.isSeen ? seenColor : baseColor,
     );
   }
 }

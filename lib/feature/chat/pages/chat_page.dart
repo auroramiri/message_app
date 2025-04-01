@@ -117,6 +117,9 @@ class ChatPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(chatControllerProvider).markAllMessagesAsSeen(user.uid);
+    });
     ref.listen(chatControllerProvider, (previous, next) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (scrollController.hasClients) {
