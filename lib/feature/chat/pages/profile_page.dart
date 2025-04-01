@@ -55,14 +55,14 @@ class ProfilePage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 20),
-                ListTile(
-                  contentPadding: const EdgeInsets.only(left: 30),
-                  title: const Text('Hey there! I am using Бундъварка'),
-                  subtitle: Text(
-                    '17th February',
-                    style: TextStyle(color: context.theme.greyColor),
-                  ),
-                ),
+                // ListTile(
+                //   contentPadding: const EdgeInsets.only(left: 30),
+                //   title: const Text('Hey there! I am using Бундъварка'),
+                //   subtitle: Text(
+                //     '17th February',
+                //     style: TextStyle(color: context.theme.greyColor),
+                //   ),
+                // ),
                 const SizedBox(height: 20),
                 CustomListTile(
                   title: 'Mute notification',

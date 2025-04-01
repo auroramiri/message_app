@@ -24,11 +24,9 @@ class TokenService {
         'fcmTokens': FieldValue.arrayUnion([token]),
         'lastTokenUpdate': FieldValue.serverTimestamp(),
       });
-
-      log('FCM токен сохранен для пользователя: ${user.uid}');
     } catch (e) {
       log('Ошибка при сохранении FCM токена: $e');
-      
+
       // Если документ еще не существует, создаем его
       if (e is FirebaseException && e.code == 'not-found') {
         try {
@@ -42,8 +40,6 @@ class TokenService {
             'fcmTokens': [token],
             'lastTokenUpdate': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
-          
-          log('FCM токен создан для нового пользователя: ${user.uid}');
         } catch (e) {
           log('Ошибка при создании документа FCM токена: $e');
         }

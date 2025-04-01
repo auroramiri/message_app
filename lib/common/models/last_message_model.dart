@@ -4,8 +4,10 @@ class LastMessageModel {
   final String contactId;
   final DateTime timeSent;
   final String lastMessage;
+  final String? backgroundImageUrl;
 
   LastMessageModel({
+    this.backgroundImageUrl,
     required this.username,
     required this.profileImageUrl,
     required this.contactId,
@@ -20,6 +22,7 @@ class LastMessageModel {
       'contactId': contactId,
       'timeSent': timeSent.millisecondsSinceEpoch,
       'lastMessage': lastMessage,
+      'backgroundImageUrl': backgroundImageUrl,
     };
   }
 
@@ -30,6 +33,7 @@ class LastMessageModel {
       contactId: map['contactId'] ?? '',
       timeSent: DateTime.fromMillisecondsSinceEpoch(map['timeSent']),
       lastMessage: map['lastMessage'] ?? '',
+      backgroundImageUrl: map['backgroundImageUrl'],
     );
   }
 }

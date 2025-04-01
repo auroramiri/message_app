@@ -43,7 +43,6 @@ class AuthStateController extends StateNotifier<AsyncValue<User?>> {
     _auth.authStateChanges().listen((user) {
       state = AsyncValue.data(user);
       
-      // When user logs in, save their FCM token
       if (user != null) {
         _tokenService.saveToken();
       }
@@ -85,7 +84,6 @@ class AuthController {
   Future<UserModel?> getCurrentUserInfo() async {
     UserModel? user = await authRepository.getCurrentUserInfo();
     
-    // If user is logged in, save their FCM token
     if (user != null) {
       await tokenService.saveToken();
     }

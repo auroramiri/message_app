@@ -20,24 +20,9 @@ class NotificationRepository {
   // Функция для инициализации уведомлений
   Future<void> initialize() async {
     // Запрос разрешений
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      announcement: false,
-      badge: true,
-      carPlay: false,
-      criticalAlert: false,
-      provisional: false,
-      sound: true,
-    );
-    log('Пользователь дал разрешение: ${settings.authorizationStatus}');
-
-    // Получение и сохранение FCM токена
     _messaging.getToken().then((token) {
       if (token != null) {
-        log('FCM Token: $token');
-        // Здесь можно сохранить токен в Firestore
       } else {
-        log('Не удалось получить FCM токен');
       }
     });
 

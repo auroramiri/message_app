@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -22,6 +24,302 @@ class ChatRepository {
   final FirebaseAuth auth;
 
   ChatRepository({required this.firestore, required this.auth});
+
+  // New method to delete chat history
+  Future<void> deleteChat({
+    required String receiverId,
+    required BuildContext context,
+  }) async {
+    try {
+      // Get reference to the messages collection
+      final currentUserMessagesCollection = firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .collection('chats')
+          .doc(receiverId)
+          .collection('messages');
+
+      final receiverUserMessagesCollection = firestore
+          .collection('users')
+          .doc(receiverId)
+          .collection('chats')
+          .doc(auth.currentUser!.uid)
+          .collection('messages');
+
+      // Get all messages
+      final currentUserMessages = await currentUserMessagesCollection.get();
+      final receiverUserMessages = await receiverUserMessagesCollection.get();
+
+      // Create a batch to delete all messages
+      final batch = firestore.batch();
+
+      // Add each message to the batch for deletion
+      for (var message in currentUserMessages.docs) {
+        batch.delete(message.reference);
+      }
+      for (var message in receiverUserMessages.docs) {
+        batch.delete(message.reference);
+      }
+
+      // Commit the batch to delete all messages
+      await batch.commit();
+
+      // Delete the chat document itself
+      await firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .collection('chats')
+          .doc(receiverId)
+          .delete();
+
+      await firestore
+          .collection('users')
+          .doc(receiverId)
+          .collection('chats')
+          .doc(auth.currentUser!.uid)
+          .delete();
+
+      // Create a new empty chat document with a "Chat cleared" message
+      final currentUserData =
+          await firestore.collection('users').doc(auth.currentUser!.uid).get();
+
+      final receiverData =
+          await firestore.collection('users').doc(receiverId).get();
+
+      if (currentUserData.exists && receiverData.exists) {
+        final receiverUserData = UserModel.fromMap(receiverData.data()!);
+
+        // Create a new last message entry
+        final newLastMessage = LastMessageModel(
+          username: receiverUserData.username,
+          profileImageUrl: receiverUserData.profileImageUrl,
+          contactId: receiverUserData.uid,
+          timeSent: DateTime.now(),
+          lastMessage: "Chat cleared",
+          backgroundImageUrl: '',
+        );
+
+        // Save the new chat entry
+        await firestore
+            .collection('users')
+            .doc(auth.currentUser!.uid)
+            .collection('chats')
+            .doc(receiverId)
+            .set(newLastMessage.toMap());
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAllertDialog(context: context, message: e.toString());
+      }
+    }
+  }
+
+  // New method to delete a single message
+  Future<void> deleteMessage({
+    required String receiverId,
+    required String messageId,
+    required BuildContext context,
+  }) async {
+    try {
+      // Delete message from sender's collection
+      await firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .collection('chats')
+          .doc(receiverId)
+          .collection('messages')
+          .doc(messageId)
+          .delete();
+
+      // Delete message from receiver's collection
+      await firestore
+          .collection('users')
+          .doc(receiverId)
+          .collection('chats')
+          .doc(auth.currentUser!.uid)
+          .collection('messages')
+          .doc(messageId)
+          .delete();
+
+      // Update last message if needed
+      final messages =
+          await firestore
+              .collection('users')
+              .doc(auth.currentUser!.uid)
+              .collection('chats')
+              .doc(receiverId)
+              .collection('messages')
+              .orderBy('timeSent', descending: true)
+              .limit(1)
+              .get();
+
+      if (messages.docs.isNotEmpty) {
+        final lastMessage = MessageModel.fromMap(messages.docs.first.data());
+
+        // Get user data
+        final currentUserData =
+            await firestore
+                .collection('users')
+                .doc(auth.currentUser!.uid)
+                .get();
+
+        final receiverData =
+            await firestore.collection('users').doc(receiverId).get();
+
+        if (currentUserData.exists && receiverData.exists) {
+          final senderData = UserModel.fromMap(currentUserData.data()!);
+          final receiverUserData = UserModel.fromMap(receiverData.data()!);
+
+          // Format last message text based on message type
+          String lastMessageText;
+          switch (lastMessage.type) {
+            case MessageType.text:
+              lastMessageText = lastMessage.textMessage;
+              break;
+            case MessageType.image:
+              lastMessageText = '📸 Photo message';
+              break;
+            case MessageType.audio:
+              lastMessageText = '🎵 Voice message';
+              break;
+            case MessageType.video:
+              lastMessageText = '🎬 Video message';
+              break;
+            case MessageType.gif:
+              lastMessageText = '🎭 GIF message';
+              break;
+          }
+
+          // Update last message for both users
+          saveAsLastMessage(
+            senderUserData: senderData,
+            receiverUserData: receiverUserData,
+            lastMessage: lastMessageText,
+            timeSent: lastMessage.timeSent,
+            receiverId: receiverId,
+          );
+        }
+      } else {
+        // If no messages left, update with "No messages"
+        final currentUserData =
+            await firestore
+                .collection('users')
+                .doc(auth.currentUser!.uid)
+                .get();
+
+        final receiverData =
+            await firestore.collection('users').doc(receiverId).get();
+
+        if (currentUserData.exists && receiverData.exists) {
+          final senderData = UserModel.fromMap(currentUserData.data()!);
+          final receiverUserData = UserModel.fromMap(receiverData.data()!);
+
+          saveAsLastMessage(
+            senderUserData: senderData,
+            receiverUserData: receiverUserData,
+            lastMessage: "No messages",
+            timeSent: DateTime.now(),
+            receiverId: receiverId,
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAllertDialog(context: context, message: e.toString());
+      }
+    }
+  }
+
+  Future<void> setChatBackgroundImage({
+    required var imageFile,
+    required String receiverId,
+    required BuildContext context,
+    required Ref ref,
+  }) async {
+    try {
+      final chatId = const Uuid().v1();
+      final storageRepo = ref.read(firebaseStorageRepositoryProvider);
+      final backgroundImageUrl = await storageRepo.storeFileToFirebase(
+        'chats/backgrounds/${auth.currentUser!.uid}/$receiverId/$chatId',
+        imageFile,
+      );
+
+      if (backgroundImageUrl == null || backgroundImageUrl.isEmpty) {
+        if (context.mounted) {
+          showAllertDialog(
+            context: context,
+            message: "Failed to upload background image.",
+          );
+        }
+        return;
+      }
+      // Get existing chat documents
+      final senderChatDoc =
+          await firestore
+              .collection('users')
+              .doc(auth.currentUser!.uid)
+              .collection('chats')
+              .doc(receiverId)
+              .get();
+
+      final receiverChatDoc =
+          await firestore
+              .collection('users')
+              .doc(receiverId)
+              .collection('chats')
+              .doc(auth.currentUser!.uid)
+              .get();
+
+      // Update sender's chat document if it exists
+      if (senderChatDoc.exists) {
+        // Get the existing document data
+        Map<String, dynamic> senderData = Map<String, dynamic>.from(
+          senderChatDoc.data()!,
+        );
+        // Update the backgroundImageUrl field
+        senderData['backgroundImageUrl'] = backgroundImageUrl;
+
+        // Set the entire document with the updated data
+        await firestore
+            .collection('users')
+            .doc(auth.currentUser!.uid)
+            .collection('chats')
+            .doc(receiverId)
+            .set(senderData);
+      } else {
+        // Chat doesn't exist yet, show error
+        if (context.mounted) {
+          showAllertDialog(
+            context: context,
+            message: "Cannot set background image. Start a conversation first.",
+          );
+        }
+        return;
+      }
+
+      // Update receiver's chat document if it exists
+      if (receiverChatDoc.exists) {
+        // Get the existing document data
+        Map<String, dynamic> receiverData = Map<String, dynamic>.from(
+          receiverChatDoc.data()!,
+        );
+        // Update the backgroundImageUrl field
+        receiverData['backgroundImageUrl'] = backgroundImageUrl;
+
+        // Set the entire document with the updated data
+        await firestore
+            .collection('users')
+            .doc(receiverId)
+            .collection('chats')
+            .doc(auth.currentUser!.uid)
+            .set(receiverData);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        showAllertDialog(context: context, message: e.toString());
+      }
+    }
+  }
 
   void sendFileMessage({
     required var file,
@@ -129,11 +427,31 @@ class ChatRepository {
                 contactId: lastMessage.contactId,
                 timeSent: lastMessage.timeSent,
                 lastMessage: lastMessage.lastMessage,
+                backgroundImageUrl: lastMessage.backgroundImageUrl,
               ),
             );
           }
           return contacts;
         });
+  }
+
+  Future<String?> getChatBackgroundImage(String receiverId) async {
+    try {
+      final chatDoc =
+          await firestore
+              .collection('users')
+              .doc(auth.currentUser!.uid)
+              .collection('chats')
+              .doc(receiverId)
+              .get();
+
+      if (chatDoc.exists && chatDoc.data()!.containsKey('backgroundImageUrl')) {
+        return chatDoc.data()!['backgroundImageUrl'] as String?;
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   void sendTextMessage({
@@ -221,34 +539,81 @@ class ChatRepository {
     required DateTime timeSent,
     required String receiverId,
   }) async {
-    final receiverLastMessage = LastMessageModel(
-      username: senderUserData.username,
-      profileImageUrl: senderUserData.profileImageUrl,
-      contactId: senderUserData.uid,
-      timeSent: timeSent,
-      lastMessage: lastMessage,
-    );
+    try {
+      // Get existing chat documents to check if they exist and get background image URLs
+      final senderChatDoc =
+          await firestore
+              .collection('users')
+              .doc(auth.currentUser!.uid)
+              .collection('chats')
+              .doc(receiverId)
+              .get();
 
-    await firestore
-        .collection('users')
-        .doc(receiverId)
-        .collection('chats')
-        .doc(auth.currentUser!.uid)
-        .set(receiverLastMessage.toMap());
+      final receiverChatDoc =
+          await firestore
+              .collection('users')
+              .doc(receiverId)
+              .collection('chats')
+              .doc(auth.currentUser!.uid)
+              .get();
 
-    final senderLastMessage = LastMessageModel(
-      username: receiverUserData.username,
-      profileImageUrl: receiverUserData.profileImageUrl,
-      contactId: receiverUserData.uid,
-      timeSent: timeSent,
-      lastMessage: lastMessage,
-    );
+      // Create base message maps
+      Map<String, dynamic> receiverLastMessageMap = {
+        'username': senderUserData.username,
+        'profileImageUrl': senderUserData.profileImageUrl,
+        'contactId': senderUserData.uid,
+        'timeSent': timeSent.millisecondsSinceEpoch,
+        'lastMessage': lastMessage,
+      };
 
-    await firestore
-        .collection('users')
-        .doc(auth.currentUser!.uid)
-        .collection('chats')
-        .doc(receiverId)
-        .set(senderLastMessage.toMap());
+      Map<String, dynamic> senderLastMessageMap = {
+        'username': receiverUserData.username,
+        'profileImageUrl': receiverUserData.profileImageUrl,
+        'contactId': receiverUserData.uid,
+        'timeSent': timeSent.millisecondsSinceEpoch,
+        'lastMessage': lastMessage,
+      };
+
+      // Always include backgroundImageUrl field, even if it's null
+      // This ensures the field exists in the document
+
+      // For receiver's chat document
+      if (receiverChatDoc.exists &&
+          receiverChatDoc.data()!.containsKey('backgroundImageUrl')) {
+        receiverLastMessageMap['backgroundImageUrl'] =
+            receiverChatDoc.data()!['backgroundImageUrl'];
+      } else {
+        // If no background image exists, explicitly set to null
+        receiverLastMessageMap['backgroundImageUrl'] = null;
+      }
+
+      // For sender's chat document
+      if (senderChatDoc.exists &&
+          senderChatDoc.data()!.containsKey('backgroundImageUrl')) {
+        senderLastMessageMap['backgroundImageUrl'] =
+            senderChatDoc.data()!['backgroundImageUrl'];
+      } else {
+        // If no background image exists, explicitly set to null
+        senderLastMessageMap['backgroundImageUrl'] = null;
+      }
+
+      // Update receiver's chat document
+      await firestore
+          .collection('users')
+          .doc(receiverId)
+          .collection('chats')
+          .doc(auth.currentUser!.uid)
+          .set(receiverLastMessageMap);
+
+      // Update sender's chat document
+      await firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .collection('chats')
+          .doc(receiverId)
+          .set(senderLastMessageMap);
+    } catch (e) {
+      log("Error saving last message: $e");
+    }
   }
 }

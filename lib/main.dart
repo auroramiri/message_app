@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -87,9 +86,6 @@ class _ChatAppState extends ConsumerState<ChatApp> {
     }
 
     await FirebaseMessaging.instance.requestPermission();
-
-    String? token = await FirebaseMessaging.instance.getToken();
-    log("FCM Token: $token");
 
     ref.read(userInfoAuthProvider.future).then((user) {
       if (user != null) {

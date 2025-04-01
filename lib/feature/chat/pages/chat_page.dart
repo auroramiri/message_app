@@ -1,10 +1,12 @@
 import 'dart:math';
+import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:custom_clippers/custom_clippers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/helper/last_seen_message.dart';
+import 'package:message_app/feature/auth/pages/image_picker_page.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -19,11 +21,99 @@ import 'package:message_app/feature/chat/widgets/yellow_card.dart';
 
 final pageStorageBucket = PageStorageBucket();
 
+final chatBackgroundProvider = FutureProvider.family<String?, String>((
+  ref,
+  receiverId,
+) {
+  return ref.watch(chatControllerProvider).getChatBackgroundImage(receiverId);
+});
+
+final tempBackgroundImageProvider = StateProvider<Uint8List?>((ref) => null);
+
 class ChatPage extends ConsumerWidget {
   ChatPage({super.key, required this.user});
 
   final UserModel user;
   final ScrollController scrollController = ScrollController();
+
+  final AssetImage defaultBackgroudImage = AssetImage(
+    'assets/images/doodle_bg.png',
+  );
+
+  // Method to show confirmation dialog for deleting chat
+  Future<void> _showDeleteChatConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Clear Chat History'),
+            content: const Text(
+              'Are you sure you want to delete all messages in this chat? '
+              'This action cannot be undone.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('CANCEL'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  'DELETE',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          ),
+    );
+    if (context.mounted) {
+      if (result == true) {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder:
+              (context) => const Center(child: CircularProgressIndicator()),
+        );
+
+        try {
+          // Delete the chat
+          await ref
+              .read(chatControllerProvider)
+              .deleteChat(receiverId: user.uid, context: context);
+
+          // Close loading indicator
+          if (context.mounted) Navigator.pop(context);
+
+          // Show success message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Chat history cleared successfully'),
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } catch (e) {
+          // Close loading indicator
+          if (context.mounted) Navigator.pop(context);
+
+          // Show error message
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to clear chat history: ${e.toString()}'),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,6 +124,9 @@ class ChatPage extends ConsumerWidget {
         }
       });
     });
+
+    final chatBackgroundAsync = ref.watch(chatBackgroundProvider(user.uid));
+
     return Scaffold(
       backgroundColor: context.theme.chatPageBgColor,
       appBar: AppBar(
@@ -111,22 +204,119 @@ class ChatPage extends ConsumerWidget {
             icon: Icons.call,
             iconColor: Colors.white,
           ),
-          CustomIconButton(
-            onPressed: () {},
-            icon: Icons.more_vert,
-            iconColor: Colors.white,
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Colors.white),
+            onSelected: (String value) async {
+              if (value == 'set_background') {
+                try {
+                  final tempBackgroundImage = await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => ImagePickerPage()),
+                  );
+
+                  if (tempBackgroundImage == null) {
+                    return;
+                  }
+
+                  if (context.mounted) {
+                    await ref
+                        .read(chatControllerProvider)
+                        .setChatBackgroundImage(
+                          imageFile: tempBackgroundImage,
+                          receiverId: user.uid,
+                          context: context,
+                        );
+                    ref.refresh(chatBackgroundProvider(user.uid));
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Chat background updated'),
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Error setting background: $e')),
+                    );
+                  }
+                }
+              } else if (value == 'clear_chat') {
+                if (context.mounted) {
+                  _showDeleteChatConfirmation(context, ref);
+                }
+              }
+            },
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem<String>(
+                    value: 'set_background',
+                    child: Text('Set Background Image'),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'clear_chat',
+                    child: Text('Clear Chat History'),
+                  ),
+                ],
           ),
         ],
       ),
       body: Stack(
         children: [
           // chat background image
-          Image(
-            height: double.maxFinite,
-            width: double.maxFinite,
-            image: const AssetImage('assets/images/doodle_bg.png'),
-            fit: BoxFit.cover,
-            color: context.theme.chatPageDoodleColor,
+          chatBackgroundAsync.when(
+            data: (backgroundImageUrl) {
+              // If there's a custom background image, use it
+              if (backgroundImageUrl != null && backgroundImageUrl.isNotEmpty) {
+                return CachedNetworkImage(
+                  imageUrl: backgroundImageUrl,
+                  height: double.maxFinite,
+                  width: double.maxFinite,
+                  fit: BoxFit.cover,
+                  placeholder:
+                      (context, url) => Image(
+                        height: double.maxFinite,
+                        width: double.maxFinite,
+                        image: defaultBackgroudImage,
+                        fit: BoxFit.cover,
+                        color: context.theme.chatPageDoodleColor,
+                      ),
+                  errorWidget:
+                      (context, url, error) => Image(
+                        height: double.maxFinite,
+                        width: double.maxFinite,
+                        image: defaultBackgroudImage,
+                        fit: BoxFit.cover,
+                        color: context.theme.chatPageDoodleColor,
+                      ),
+                );
+              } else {
+                // Use default background if no custom background is set
+                return Image(
+                  height: double.maxFinite,
+                  width: double.maxFinite,
+                  image: defaultBackgroudImage,
+                  fit: BoxFit.cover,
+                  color: context.theme.chatPageDoodleColor,
+                );
+              }
+            },
+            loading:
+                () => Image(
+                  height: double.maxFinite,
+                  width: double.maxFinite,
+                  image: defaultBackgroudImage,
+                  fit: BoxFit.cover,
+                  color: context.theme.chatPageDoodleColor,
+                ),
+            error:
+                (_, __) => Image(
+                  height: double.maxFinite,
+                  width: double.maxFinite,
+                  image: defaultBackgroudImage,
+                  fit: BoxFit.cover,
+                  color: context.theme.chatPageDoodleColor,
+                ),
           ),
           // Stream of Chat
           Padding(
