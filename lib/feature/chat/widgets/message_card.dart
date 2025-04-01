@@ -10,6 +10,8 @@ import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
 import 'dart:developer' as developer;
 
+import 'package:message_app/feature/chat/pages/image_viewer_page.dart';
+
 class MessageCard extends ConsumerWidget {
   const MessageCard({
     super.key,
@@ -250,6 +252,7 @@ class MessageCard extends ConsumerWidget {
   }
 
   @override
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
       onLongPress: () {
@@ -295,17 +298,23 @@ class MessageCard extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 5),
                   child:
                       message.type == my_type.MessageType.image
-                          ? Padding(
-                            padding: const EdgeInsets.only(
-                              right: 3,
-                              top: 3,
-                              left: 3,
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image(
-                                image: CachedNetworkImageProvider(
-                                  message.textMessage,
+                          ? GestureDetector(
+                            onTap: () => _openImageViewer(context),
+                            child: Padding(
+                              padding: const EdgeInsets.only(
+                                right: 3,
+                                top: 3,
+                                left: 3,
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: Hero(
+                                  tag: 'image_${message.messageId}',
+                                  child: Image(
+                                    image: CachedNetworkImageProvider(
+                                      message.textMessage,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
@@ -403,6 +412,15 @@ class MessageCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Add this method to open the image viewer
+  void _openImageViewer(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ImageViewerPage(imageUrl: message.textMessage),
       ),
     );
   }
