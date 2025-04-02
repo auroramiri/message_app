@@ -8,6 +8,7 @@ import 'package:message_app/common/enum/message_type.dart' as my_type;
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
+import 'package:message_app/feature/chat/pages/chat_page.dart';
 import 'dart:developer' as developer;
 
 import 'package:message_app/feature/chat/pages/image_viewer_page.dart';
@@ -299,7 +300,7 @@ class MessageCard extends ConsumerWidget {
                   child:
                       message.type == my_type.MessageType.image
                           ? GestureDetector(
-                            onTap: () => _openImageViewer(context),
+                            onTap: () => _openImageViewer(context, ref),
                             child: Padding(
                               padding: const EdgeInsets.only(
                                 right: 3,
@@ -416,11 +417,20 @@ class MessageCard extends ConsumerWidget {
     );
   }
 
-  // Add this method to open the image viewer
-  void _openImageViewer(BuildContext context) {
+  void _openImageViewer(BuildContext context, WidgetRef ref) {
+    final imageMessages = ref.read(chatImagesProvider(message.receiverId));
+    final index = imageMessages.indexWhere(
+      (msg) => msg.messageId == message.messageId,
+    );
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ImageViewerPage(imageUrl: message.textMessage),
+        builder:
+            (context) => ImageViewerPage(
+              imageUrl: message.textMessage,
+              allImages: imageMessages.map((m) => m.textMessage).toList(),
+              initialIndex: index >= 0 ? index : 0,
+            ),
       ),
     );
   }

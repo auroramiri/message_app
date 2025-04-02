@@ -1,19 +1,21 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/helper/last_seen_message.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:message_app/common/utils/coloors.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
+import 'package:message_app/feature/auth/controller/auth_controller.dart';
 import 'package:message_app/feature/chat/widgets/custom_list_tile.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key, required this.user});
 
   final UserModel user;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: context.theme.profilePageBg,
       body: CustomScrollView(
@@ -30,18 +32,45 @@ class ProfilePage extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(user.username, style: const TextStyle(fontSize: 24)),
+
                       const SizedBox(height: 10),
-                      Text(
-                        user.phoneNumber,
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: context.theme.greyColor,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      Text(
-                        "last seen ${lastSeenMessage(user.lastSeen)} ago",
-                        style: TextStyle(color: context.theme.greyColor),
+                      StreamBuilder(
+                        stream: ref
+                            .read(authControllerProvider)
+                            .getUserPrecenceStatus(uid: user.uid),
+                        builder: (_, snapshot) {
+                          if (snapshot.connectionState !=
+                              ConnectionState.active) {
+                            return const SizedBox();
+                          }
+
+                          final singleUserModel = snapshot.data!;
+                          final lastMessage = lastSeenMessage(
+                            singleUserModel.lastSeen,
+                          );
+
+                          return Column(
+                            children: [
+                              const SizedBox(height: 10),
+                              Text(
+                                singleUserModel.phoneNumber,
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: context.theme.greyColor,
+                                ),
+                              ),
+                              Text(
+                                singleUserModel.active
+                                    ? 'online'
+                                    : "last seen $lastMessage ago",
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,

@@ -11,8 +11,15 @@ import 'package:photo_view/photo_view.dart';
 
 class ImageViewerPage extends StatefulWidget {
   final String imageUrl;
+  final List<String>? allImages; // Optional list of all images
+  final int initialIndex; // Initial index to display
 
-  const ImageViewerPage({super.key, required this.imageUrl});
+  const ImageViewerPage({
+    super.key,
+    required this.imageUrl,
+    this.allImages,
+    this.initialIndex = 0,
+  });
 
   @override
   State<ImageViewerPage> createState() => _ImageViewerPageState();
@@ -20,9 +27,28 @@ class ImageViewerPage extends StatefulWidget {
 
 class _ImageViewerPageState extends State<ImageViewerPage> {
   bool _isToolbarVisible = true;
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: _currentIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    // If we have multiple images, use PageView
+    final bool hasMultipleImages =
+        widget.allImages != null && widget.allImages!.length > 1;
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: GestureDetector(
@@ -39,28 +65,63 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
         },
         child: Stack(
           children: [
-            // Photo view widget for zooming and panning
-            PhotoView(
-              imageProvider: CachedNetworkImageProvider(widget.imageUrl),
-              minScale: PhotoViewComputedScale.contained,
-              maxScale: PhotoViewComputedScale.covered * 3,
-              backgroundDecoration: const BoxDecoration(color: Colors.black),
-              loadingBuilder:
-                  (context, event) => Center(
-                    child: CircularProgressIndicator(
-                      value:
-                          event == null
-                              ? 0
-                              : event.cumulativeBytesLoaded /
-                                  (event.expectedTotalBytes ?? 1),
-                    ),
+            // Use PageView if we have multiple images
+            hasMultipleImages
+                ? PageView.builder(
+                  controller: _pageController,
+                  itemCount: widget.allImages!.length,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _currentIndex = index;
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    return PhotoView(
+                      imageProvider: CachedNetworkImageProvider(
+                        widget.allImages![index],
+                      ),
+                      minScale: PhotoViewComputedScale.contained,
+                      maxScale: PhotoViewComputedScale.covered * 3,
+                      backgroundDecoration: const BoxDecoration(
+                        color: Colors.black,
+                      ),
+                      loadingBuilder:
+                          (context, event) => Center(
+                            child: CircularProgressIndicator(
+                              value:
+                                  event == null
+                                      ? 0
+                                      : event.cumulativeBytesLoaded /
+                                          (event.expectedTotalBytes ?? 1),
+                            ),
+                          ),
+                      customSize: MediaQuery.of(context).size,
+                      enableRotation: true,
+                    );
+                  },
+                )
+                : PhotoView(
+                  imageProvider: CachedNetworkImageProvider(widget.imageUrl),
+                  minScale: PhotoViewComputedScale.contained,
+                  maxScale: PhotoViewComputedScale.covered * 3,
+                  backgroundDecoration: const BoxDecoration(
+                    color: Colors.black,
                   ),
-              // Enable rotation
-              customSize: MediaQuery.of(context).size,
-              enableRotation: true,
-            ),
+                  loadingBuilder:
+                      (context, event) => Center(
+                        child: CircularProgressIndicator(
+                          value:
+                              event == null
+                                  ? 0
+                                  : event.cumulativeBytesLoaded /
+                                      (event.expectedTotalBytes ?? 1),
+                        ),
+                      ),
+                  customSize: MediaQuery.of(context).size,
+                  enableRotation: true,
+                ),
 
-            // Top toolbar with close button
+            // Top toolbar with close button and image counter
             AnimatedOpacity(
               opacity: _isToolbarVisible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
@@ -77,7 +138,9 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                       Text(
-                        'Image Viewer',
+                        hasMultipleImages
+                            ? 'Image ${_currentIndex + 1}/${widget.allImages!.length}'
+                            : 'Image Viewer',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -124,6 +187,51 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                 ),
               ),
             ),
+
+            // Navigation arrows for multiple images
+            if (hasMultipleImages && _isToolbarVisible)
+              Positioned(
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: 0,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Left arrow
+                    if (_currentIndex > 0)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_ios,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          _pageController.previousPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                      ),
+                    const Spacer(),
+                    // Right arrow
+                    if (_currentIndex < widget.allImages!.length - 1)
+                      IconButton(
+                        icon: const Icon(
+                          Icons.arrow_forward_ios,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                        onPressed: () {
+                          _pageController.nextPage(
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeInOut,
+                          );
+                        },
+                      ),
+                  ],
+                ),
+              ),
 
             // Swipe up indicator
             AnimatedOpacity(

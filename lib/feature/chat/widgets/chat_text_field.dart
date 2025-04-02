@@ -154,30 +154,6 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: [
-                      iconWithText(
-                        onPressed: () {},
-                        icon: Icons.headphones,
-                        text: 'Audio',
-                        background: const Color(0xFFF96533),
-                      ),
-                      iconWithText(
-                        onPressed: () {},
-                        icon: Icons.location_on,
-                        text: 'Location',
-                        background: Coloors.blueDark,
-                      ),
-                      iconWithText(
-                        onPressed: () {},
-                        icon: Icons.person,
-                        text: 'Contact',
-                        background: const Color(0xFF009DE1),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
@@ -228,7 +204,7 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                                 () => setState(
                                   () =>
                                       cardHeight == 0
-                                          ? cardHeight = 220
+                                          ? cardHeight = 120
                                           : cardHeight = 0,
                                 ),
                             icon:

@@ -5,8 +5,11 @@ import 'package:custom_clippers/custom_clippers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:message_app/common/enum/message_type.dart' as my_type;
 import 'package:message_app/common/helper/last_seen_message.dart';
+import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/auth/pages/image_picker_page.dart';
+import 'package:message_app/feature/chat/pages/chat_image_gallery_page.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -20,6 +23,7 @@ import 'package:message_app/feature/chat/widgets/show_date_card.dart';
 import 'package:message_app/feature/chat/widgets/yellow_card.dart';
 
 final pageStorageBucket = PageStorageBucket();
+final ScrollController _scrollController = ScrollController();
 
 final chatBackgroundProvider = FutureProvider.family<String?, String>((
   ref,
@@ -27,6 +31,10 @@ final chatBackgroundProvider = FutureProvider.family<String?, String>((
 ) {
   return ref.watch(chatControllerProvider).getChatBackgroundImage(receiverId);
 });
+
+final chatImagesProvider = StateProvider.family<List<MessageModel>, String>(
+  (ref, chatId) => [],
+);
 
 final tempBackgroundImageProvider = StateProvider<Uint8List?>((ref) => null);
 
@@ -115,6 +123,20 @@ class ChatPage extends ConsumerWidget {
     }
   }
 
+  void _scrollToBottom({bool animate = true}) {
+    if (_scrollController.hasClients) {
+      if (animate) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      } else {
+        _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -122,9 +144,7 @@ class ChatPage extends ConsumerWidget {
     });
     ref.listen(chatControllerProvider, (previous, next) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (scrollController.hasClients) {
-          scrollController.jumpTo(scrollController.position.maxScrollExtent);
-        }
+        _scrollToBottom();
       });
     });
 
@@ -206,6 +226,23 @@ class ChatPage extends ConsumerWidget {
             onPressed: () {},
             icon: Icons.call,
             iconColor: Colors.white,
+          ),
+          CustomIconButton(
+            icon: Icons.photo_library,
+            iconColor: Colors.white,
+            onPressed: () {
+              final imageMessages = ref.read(chatImagesProvider(user.uid));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ChatImageGalleryPage(
+                        imageMessages: imageMessages,
+                        chatName: user.username,
+                      ),
+                ),
+              );
+            },
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert, color: Colors.white),
@@ -382,6 +419,20 @@ class ChatPage extends ConsumerWidget {
                       );
                     },
                   );
+                }
+
+                if (snapshot.hasData) {
+                  final messages = snapshot.data!;
+                  final imageMessages =
+                      messages
+                          .where((msg) => msg.type == my_type.MessageType.image)
+                          .toList();
+
+                  // Update the provider with image messages
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    ref.read(chatImagesProvider(user.uid).notifier).state =
+                        imageMessages;
+                  });
                 }
 
                 return PageStorage(
