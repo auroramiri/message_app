@@ -82,7 +82,7 @@ class ChatController {
       imageFile: imageFile,
       receiverId: receiverId,
       context: context,
-      ref: ref, // Pass the ref from the controller
+      ref: ref,
     );
   }
 

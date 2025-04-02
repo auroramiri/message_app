@@ -11,8 +11,8 @@ import 'package:photo_view/photo_view.dart';
 
 class ImageViewerPage extends StatefulWidget {
   final String imageUrl;
-  final List<String>? allImages; // Optional list of all images
-  final int initialIndex; // Initial index to display
+  final List<String>? allImages;
+  final int initialIndex;
 
   const ImageViewerPage({
     super.key,
@@ -45,7 +45,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
 
   @override
   Widget build(BuildContext context) {
-    // If we have multiple images, use PageView
     final bool hasMultipleImages =
         widget.allImages != null && widget.allImages!.length > 1;
 
@@ -58,14 +57,12 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
           });
         },
         onVerticalDragEnd: (details) {
-          // If the user swipes up with enough velocity, close the viewer
           if (details.velocity.pixelsPerSecond.dy < -300) {
             Navigator.of(context).pop();
           }
         },
         child: Stack(
           children: [
-            // Use PageView if we have multiple images
             hasMultipleImages
                 ? PageView.builder(
                   controller: _pageController,
@@ -120,8 +117,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                   customSize: MediaQuery.of(context).size,
                   enableRotation: true,
                 ),
-
-            // Top toolbar with close button and image counter
             AnimatedOpacity(
               opacity: _isToolbarVisible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
@@ -147,14 +142,13 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const SizedBox(width: 48), // Balance the layout
+                      const SizedBox(width: 48),
                     ],
                   ),
                 ),
               ),
             ),
 
-            // Bottom toolbar with actions
             AnimatedPositioned(
               duration: const Duration(milliseconds: 200),
               bottom: _isToolbarVisible ? 0 : -80,
@@ -188,7 +182,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
               ),
             ),
 
-            // Navigation arrows for multiple images
             if (hasMultipleImages && _isToolbarVisible)
               Positioned(
                 left: 0,
@@ -198,7 +191,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Left arrow
                     if (_currentIndex > 0)
                       IconButton(
                         icon: const Icon(
@@ -214,7 +206,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                         },
                       ),
                     const Spacer(),
-                    // Right arrow
                     if (_currentIndex < widget.allImages!.length - 1)
                       IconButton(
                         icon: const Icon(
@@ -233,7 +224,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                 ),
               ),
 
-            // Swipe up indicator
             AnimatedOpacity(
               opacity: _isToolbarVisible ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
@@ -293,20 +283,14 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
   Future<void> _saveImage() async {
     late String message;
     try {
-      // Download image
       final Response response = await get(Uri.parse(widget.imageUrl));
-
-      // Get temporary directory
       final dir = await getTemporaryDirectory();
 
-      // Create an image name
       var filename = '${dir.path}/SaveImage${random.nextInt(100)}.png';
 
-      // Save to filesystem
       final file = File(filename);
       await file.writeAsBytes(response.bodyBytes);
 
-      // Ask the user to save it
       final params = SaveFileDialogParams(sourceFilePath: file.path);
       final finalPath = await FlutterFileDialog.saveFile(params: params);
 

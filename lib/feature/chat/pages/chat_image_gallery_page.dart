@@ -52,7 +52,6 @@ class ChatImageGalleryPage extends ConsumerWidget {
                           builder:
                               (context) => ImageViewerPage(
                                 imageUrl: message.textMessage,
-                                // Pass the list of images and current index for navigation
                                 allImages:
                                     imageMessages
                                         .map((m) => m.textMessage)

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -31,6 +32,8 @@ final chatBackgroundProvider = FutureProvider.family<String?, String>((
 ) {
   return ref.watch(chatControllerProvider).getChatBackgroundImage(receiverId);
 });
+
+final uploadingImagesProvider = StateProvider<Map<String, File>>((ref) => {});
 
 final chatImagesProvider = StateProvider.family<List<MessageModel>, String>(
   (ref, chatId) => [],

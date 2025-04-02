@@ -25,7 +25,6 @@ class ChatRepository {
 
   ChatRepository({required this.firestore, required this.auth});
 
-  // New method to delete chat history
   Future<void> deleteChat({
     required String receiverId,
     required BuildContext context,
@@ -114,7 +113,6 @@ class ChatRepository {
     }
   }
 
-  // New method to delete a single message
   Future<void> deleteMessage({
     String? receiverId,
     required String messageId,
@@ -661,7 +659,6 @@ class ChatRepository {
     }
   }
 
-  // Add this method to your ChatRepository class
   Future<void> markMessageAsSeen(String senderId, String messageId) async {
     try {
       // Update in sender's collection
@@ -694,7 +691,6 @@ class ChatRepository {
     }
   }
 
-  // Add this method to automatically mark all messages as seen when opening a chat
   Future<void> markAllMessagesAsSeen(String senderId) async {
     try {
       // Get all unseen messages from this sender
