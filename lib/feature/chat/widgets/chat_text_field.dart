@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:message_app/common/enum/message_type.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
+import 'package:message_app/common/helper/show_alert_dialog.dart';
 import 'package:message_app/common/utils/coloors.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/auth/pages/image_picker_page.dart';
@@ -24,6 +27,7 @@ class ChatTextField extends ConsumerStatefulWidget {
 
 class _ChatTextFieldState extends ConsumerState<ChatTextField> {
   late TextEditingController messageController;
+  File? imageCamera;
 
   bool isMessageIconEnabled = false;
   double cardHeight = 0;
@@ -40,18 +44,51 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
     }
   }
 
-  void sendFileMessage(var file, MessageType messageType) async {
-    ref
-        .read(chatControllerProvider)
-        .sendFileMessage(context, file, widget.receiverId, messageType);
-    await Future.delayed(const Duration(milliseconds: 500));
-    SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-      widget.scrollController.animateTo(
-        widget.scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+  void pickImageFromCamera() async {
+    if (cardHeight > 0) {
+      setState(() => cardHeight = 0);
+    }
+    try {
+      final pickedImage = await ImagePicker().pickImage(
+        source: ImageSource.camera,
       );
-    });
+      if (pickedImage != null) {
+        final imageFile = File(pickedImage.path);
+        if (await imageFile.exists()) {
+          sendFileMessage(imageFile, MessageType.image);
+        } else {
+          if (!mounted) return;
+          showAllertDialog(
+            context: context,
+            message: 'Error: Image file not found',
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showAllertDialog(context: context, message: 'Error capturing image: $e');
+    }
+  }
+
+  void sendFileMessage(var file, MessageType messageType) async {
+    try {
+      ref
+          .read(chatControllerProvider)
+          .sendFileMessage(context, file, widget.receiverId, messageType);
+      await Future.delayed(const Duration(milliseconds: 500));
+      SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+        if (widget.scrollController.hasClients) {
+          widget.scrollController.animateTo(
+            widget.scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      showAllertDialog(context: context, message: 'Error sending file: $e');
+    }
   }
 
   void sendTextMessage() async {
@@ -141,7 +178,7 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                         background: const Color(0xFF7F66FE),
                       ),
                       iconWithText(
-                        onPressed: () {},
+                        onPressed: pickImageFromCamera,
                         icon: Icons.camera_alt,
                         text: 'Camera',
                         background: const Color(0xFFFE2E74),
@@ -214,11 +251,6 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                             iconColor:
                                 Theme.of(context).listTileTheme.iconColor,
                           ),
-                        ),
-                        CustomIconButton(
-                          onPressed: () {},
-                          icon: Icons.camera_alt_outlined,
-                          iconColor: Theme.of(context).listTileTheme.iconColor,
                         ),
                       ],
                     ),
