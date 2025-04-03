@@ -1,3 +1,4 @@
+// lib\feature\chat\controller\chat_controller.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/enum/message_type.dart';
@@ -23,8 +24,9 @@ class ChatController {
     BuildContext context,
     var file,
     String receiverId,
-    MessageType messageType,
-  ) {
+    MessageType messageType, {
+    String? fileName,
+  }) {
     ref.read(userInfoAuthProvider).whenData((senderData) {
       return _chatRepository.sendFileMessage(
         file: file,
@@ -33,6 +35,7 @@ class ChatController {
         senderData: senderData!,
         ref: ref,
         messageType: messageType,
+        fileName: fileName,
       );
     });
   }

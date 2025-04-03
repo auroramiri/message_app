@@ -3,6 +3,7 @@ enum MessageType {
   image('image'),
   audio('audio'),
   video('video'),
+  file('file'),
   gif('gif');
 
   final String type;
@@ -21,6 +22,8 @@ extension ConvertMessage on String {
         return MessageType.audio;
       case 'video':
         return MessageType.video;
+      case 'file':
+        return MessageType.file;
       case 'gif':
         return MessageType.gif;
 

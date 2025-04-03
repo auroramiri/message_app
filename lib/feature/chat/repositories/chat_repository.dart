@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -30,7 +31,6 @@ class ChatRepository {
     required BuildContext context,
   }) async {
     try {
-      // Get reference to the messages collection
       final currentUserMessagesCollection = firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
@@ -45,14 +45,11 @@ class ChatRepository {
           .doc(auth.currentUser!.uid)
           .collection('messages');
 
-      // Get all messages
       final currentUserMessages = await currentUserMessagesCollection.get();
       final receiverUserMessages = await receiverUserMessagesCollection.get();
 
-      // Create a batch to delete all messages
       final batch = firestore.batch();
 
-      // Add each message to the batch for deletion
       for (var message in currentUserMessages.docs) {
         batch.delete(message.reference);
       }
@@ -60,10 +57,8 @@ class ChatRepository {
         batch.delete(message.reference);
       }
 
-      // Commit the batch to delete all messages
       await batch.commit();
 
-      // Delete the chat document itself
       await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
@@ -78,7 +73,6 @@ class ChatRepository {
           .doc(auth.currentUser!.uid)
           .delete();
 
-      // Create a new empty chat document with a "Chat cleared" message
       final currentUserData =
           await firestore.collection('users').doc(auth.currentUser!.uid).get();
 
@@ -88,7 +82,6 @@ class ChatRepository {
       if (currentUserData.exists && receiverData.exists) {
         final receiverUserData = UserModel.fromMap(receiverData.data()!);
 
-        // Create a new last message entry
         final newLastMessage = LastMessageModel(
           username: receiverUserData.username,
           profileImageUrl: receiverUserData.profileImageUrl,
@@ -98,7 +91,6 @@ class ChatRepository {
           backgroundImageUrl: '',
         );
 
-        // Save the new chat entry
         await firestore
             .collection('users')
             .doc(auth.currentUser!.uid)
@@ -119,11 +111,9 @@ class ChatRepository {
     required BuildContext context,
   }) async {
     try {
-      // First, we need to find the message to get the receiverId if not provided
       String actualReceiverId = receiverId ?? '';
 
       if (actualReceiverId.isEmpty) {
-        // Search for the message in all chats to find the receiverId
         final userChats =
             await firestore
                 .collection('users')
@@ -133,11 +123,8 @@ class ChatRepository {
 
         bool messageFound = false;
 
-        // Iterate through each chat
         for (var chatDoc in userChats.docs) {
           final chatId = chatDoc.id;
-
-          // Check if this message exists in this chat
           final messageDoc =
               await firestore
                   .collection('users')
@@ -160,9 +147,6 @@ class ChatRepository {
         }
       }
 
-      // Now we have the receiverId, proceed with deletion
-
-      // Delete message from sender's collection
       await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
@@ -172,7 +156,6 @@ class ChatRepository {
           .doc(messageId)
           .delete();
 
-      // Delete message from receiver's collection
       await firestore
           .collection('users')
           .doc(actualReceiverId)
@@ -182,7 +165,6 @@ class ChatRepository {
           .doc(messageId)
           .delete();
 
-      // Update last message if needed
       final messages =
           await firestore
               .collection('users')
@@ -197,7 +179,6 @@ class ChatRepository {
       if (messages.docs.isNotEmpty) {
         final lastMessage = MessageModel.fromMap(messages.docs.first.data());
 
-        // Get user data
         final currentUserData =
             await firestore
                 .collection('users')
@@ -211,7 +192,6 @@ class ChatRepository {
           final senderData = UserModel.fromMap(currentUserData.data()!);
           final receiverUserData = UserModel.fromMap(receiverData.data()!);
 
-          // Format last message text based on message type
           String lastMessageText;
           switch (lastMessage.type) {
             case MessageType.text:
@@ -226,12 +206,14 @@ class ChatRepository {
             case MessageType.video:
               lastMessageText = '🎬 Video message';
               break;
+            case MessageType.file:
+              lastMessageText = '📄 File message';
+              break;
             case MessageType.gif:
               lastMessageText = '🎭 GIF message';
               break;
           }
 
-          // Update last message for both users
           saveAsLastMessage(
             senderUserData: senderData,
             receiverUserData: receiverUserData,
@@ -241,7 +223,6 @@ class ChatRepository {
           );
         }
       } else {
-        // If no messages left, update with "No messages"
         final currentUserData =
             await firestore
                 .collection('users')
@@ -370,17 +351,27 @@ class ChatRepository {
     required UserModel senderData,
     required Ref ref,
     required MessageType messageType,
+    String? fileName,
   }) async {
     try {
       final timeSent = DateTime.now();
       final messageId = const Uuid().v1();
+      log(
+        'Sending file message: file = $file, receiverId = $receiverId, messageType = $messageType, fileName = $fileName',
+      );
 
-      final imageUrl = await ref
+      int? fileSize;
+      if (file is File) {
+        fileSize = await file.length(); // Get file size
+      }
+
+      final fileUrl = await ref
           .read(firebaseStorageRepositoryProvider)
           .storeFileToFirebase(
             'chats/${messageType.type}/${senderData.uid}/$receiverId/$messageId',
             file,
           );
+      log('File URL: $fileUrl');
       final userMap = await firestore.collection('users').doc(receiverId).get();
       final receverUserData = UserModel.fromMap(userMap.data()!);
 
@@ -391,28 +382,34 @@ class ChatRepository {
           lastMessage = '📸 Photo message';
           break;
         case MessageType.audio:
-          lastMessage = '📸 Voice message';
+          lastMessage = '🎵 Voice message';
           break;
         case MessageType.video:
-          lastMessage = '📸 Video message';
+          lastMessage = '🎬 Video message';
           break;
         case MessageType.gif:
-          lastMessage = '📸 GIF message';
+          lastMessage = '🎭 GIF message';
+          break;
+        case MessageType.file:
+          lastMessage = '📄 File: ${fileName ?? "File"}'; // Use the filename
           break;
         default:
-          lastMessage = '📦 GIF message';
+          lastMessage = '📦 Unknown message';
           break;
       }
 
       saveToMessageCollection(
         receiverId: receiverId,
-        textMessage: imageUrl,
+        textMessage: fileName ?? 'File',
         timeSent: timeSent,
         textMessageId: messageId,
         senderUsername: senderData.username,
         receiverUsername: receverUserData.username,
         messageType: messageType,
+        fileSize: fileSize,
+        fileUrl: fileUrl,
       );
+      log('Message saved to message collection');
 
       saveAsLastMessage(
         senderUserData: senderData,
@@ -421,7 +418,9 @@ class ChatRepository {
         timeSent: timeSent,
         receiverId: receiverId,
       );
+      log('Last message saved');
     } catch (e) {
+      log(e.toString());
       if (context.mounted) {
         showAllertDialog(context: context, message: e.toString());
       }
@@ -535,23 +534,29 @@ class ChatRepository {
 
   void saveToMessageCollection({
     required String receiverId,
-    required String textMessage,
+    required String textMessage, // This is now the filename for files
     required DateTime timeSent,
     required String textMessageId,
     required String senderUsername,
     required String receiverUsername,
     required MessageType messageType,
+    int? fileSize,
+    String? fileUrl, // Add this line
   }) async {
     final message = MessageModel(
       senderId: auth.currentUser!.uid,
       receiverId: receiverId,
-      textMessage: textMessage,
+      textMessage: textMessage, // Filename for files
       type: messageType,
       timeSent: timeSent,
       messageId: textMessageId,
       isSeen: false,
       notificationSent: false,
+      fileSize: fileSize,
+      fileUrl: fileUrl, // And this line
     );
+
+    log('Saving message: ${message.toMap()}');
 
     // sender
     await firestore
@@ -563,6 +568,8 @@ class ChatRepository {
         .doc(textMessageId)
         .set(message.toMap());
 
+    log('Message saved to sender collection');
+
     // receiver
     await firestore
         .collection('users')
@@ -572,6 +579,8 @@ class ChatRepository {
         .collection('messages')
         .doc(textMessageId)
         .set(message.toMap());
+
+    log('Message saved to receiver collection');
   }
 
   void saveAsLastMessage({

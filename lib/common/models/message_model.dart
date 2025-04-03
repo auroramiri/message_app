@@ -9,6 +9,8 @@ class MessageModel {
   final String messageId;
   final bool isSeen;
   final bool notificationSent;
+  final String? fileUrl;
+  final int? fileSize;
 
   MessageModel({
     required this.senderId,
@@ -19,6 +21,8 @@ class MessageModel {
     required this.messageId,
     required this.isSeen,
     required this.notificationSent,
+    this.fileUrl,
+    this.fileSize,
   });
 
   factory MessageModel.fromMap(Map<String, dynamic> map) {
@@ -31,6 +35,8 @@ class MessageModel {
       messageId: map["messageId"],
       isSeen: map["isSeen"] ?? false,
       notificationSent: false,
+      fileUrl: map['fileUrl'],
+      fileSize: map['fileSize'],
     );
   }
 
@@ -44,6 +50,8 @@ class MessageModel {
       "messageId": messageId,
       "isSeen": isSeen,
       "notificationSent": notificationSent,
+      'fileUrl': fileUrl,
+      'fileSize': fileSize,
     };
   }
 }

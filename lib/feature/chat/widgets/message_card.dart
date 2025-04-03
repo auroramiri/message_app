@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:custom_clippers/custom_clippers.dart';
 import 'package:flutter/material.dart';
@@ -7,11 +8,18 @@ import 'package:intl/intl.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/message_model.dart';
+import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
 import 'package:message_app/feature/chat/pages/chat_page.dart';
 import 'dart:developer' as developer;
 
 import 'package:message_app/feature/chat/pages/image_viewer_page.dart';
+import 'package:message_app/feature/chat/widgets/message_time_send.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'dart:math';
+import 'package:path_provider/path_provider.dart';
 
 class MessageCard extends ConsumerWidget {
   const MessageCard({
@@ -153,13 +161,10 @@ class MessageCard extends ConsumerWidget {
               ),
               TextButton(
                 onPressed: () async {
-                  // Close the confirmation dialog
                   Navigator.pop(dialogContext);
 
-                  // Store the BuildContext for the loading dialog
                   BuildContext? loadingDialogContext;
 
-                  // Show loading indicator
                   showDialog(
                     context: context,
                     barrierDismissible: false,
@@ -170,7 +175,6 @@ class MessageCard extends ConsumerWidget {
                   );
 
                   try {
-                    // Call the delete message method from your controller
                     await ref
                         .read(chatControllerProvider)
                         .deleteMessage(
@@ -178,13 +182,11 @@ class MessageCard extends ConsumerWidget {
                           context: context,
                         );
 
-                    // Close loading indicator if it's still showing
                     if (loadingDialogContext != null && context.mounted) {
                       Navigator.of(loadingDialogContext!).pop();
                       loadingDialogContext = null;
                     }
 
-                    // Show success message
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text('Message deleted')),
@@ -193,13 +195,11 @@ class MessageCard extends ConsumerWidget {
                   } catch (e) {
                     developer.log('Error deleting message: $e');
 
-                    // Close loading indicator if it's still showing
                     if (loadingDialogContext != null && context.mounted) {
                       Navigator.of(loadingDialogContext!).pop();
                       loadingDialogContext = null;
                     }
 
-                    // Show error message
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Failed to delete message: $e')),
@@ -252,9 +252,31 @@ class MessageCard extends ConsumerWidget {
     );
   }
 
+  String _getFileExtension(String fileName) {
+    try {
+      return ".${fileName.split('.').last}";
+    } catch (e) {
+      return '';
+    }
+  }
+
+  String _getFileNameWithoutExtension(String fileName) {
+    try {
+      return fileName.split('.').first;
+    } catch (e) {
+      return fileName;
+    }
+  }
+
+  String _formatFileSize(double bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
+    var i = (log(bytes) / log(1024)).floor();
+    return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check if this message is currently uploading
     final uploadingImages = ref.watch(uploadingImagesProvider);
     final isUploading = uploadingImages.containsKey(message.messageId);
 
@@ -318,7 +340,6 @@ class MessageCard extends ConsumerWidget {
                                 child: Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    // Image
                                     Hero(
                                       tag: 'image_${message.messageId}',
                                       child: CachedNetworkImage(
@@ -349,8 +370,6 @@ class MessageCard extends ConsumerWidget {
                                             ),
                                       ),
                                     ),
-
-                                    // Loading overlay
                                     if (isUploading)
                                       Container(
                                         width: 200,
@@ -384,8 +403,44 @@ class MessageCard extends ConsumerWidget {
                               ),
                             ),
                           )
+                          : message.type == my_type.MessageType.file
+                          ? _buildFileMessage(context)
                           : Column(
-                            // Existing text message code...
+                            crossAxisAlignment:
+                                isSender
+                                    ? CrossAxisAlignment.end
+                                    : CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: 8,
+                                  left: isSender ? 10 : 15,
+                                  right: isSender ? 15 : 10,
+                                ),
+                                child: Text(
+                                  message.textMessage,
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  bottom: 5,
+                                  left: isSender ? 10 : 15,
+                                  right: isSender ? 15 : 10,
+                                  top: 4,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    MessageTimeSend(message: message),
+                                    if (isSender) const SizedBox(width: 3),
+                                    if (isSender)
+                                      _buildReadStatusIndicator(context),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                 ),
               ),
@@ -417,13 +472,7 @@ class MessageCard extends ConsumerWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          DateFormat.Hm().format(message.timeSent),
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.white,
-                          ),
-                        ),
+                        MessageTimeSend(message: message),
                         if (isSender) const SizedBox(width: 3),
                         if (isSender)
                           _buildReadStatusIndicator(
@@ -472,5 +521,137 @@ class MessageCard extends ConsumerWidget {
       size: 14,
       color: message.isSeen ? seenColor : baseColor,
     );
+  }
+
+  Widget _buildFileMessage(BuildContext context) {
+    final fileName = message.textMessage;
+    final fileExtension = _getFileExtension(fileName);
+    final fileNameWithoutExtension = _getFileNameWithoutExtension(fileName);
+    final fileSizeInBytes = message.fileSize ?? 0;
+    final formattedFileSize = _formatFileSize(fileSizeInBytes.toDouble());
+
+    final fileUrl = message.fileUrl;
+
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.insert_drive_file,
+                size: 32,
+                color: context.theme.greyColor,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      fileNameWithoutExtension,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      fileExtension,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: context.theme.greyColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.download),
+                onPressed:
+                    fileUrl != null
+                        ? () => _saveFile(context, fileUrl, fileName)
+                        : null,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                formattedFileSize,
+                style: TextStyle(fontSize: 10, color: context.theme.greyColor),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(
+                  bottom: 5,
+                  left: 10,
+                  right: 0,
+                  top: 4,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    MessageTimeSend(message: message),
+                    if (isSender) const SizedBox(width: 3),
+                    if (isSender) _buildReadStatusIndicator(context),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveFile(
+    BuildContext context,
+    String fileUrl,
+    String fileName,
+  ) async {
+    String message;
+    try {
+      final dio = Dio();
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}/$fileName';
+
+      // Download the file
+      await dio.download(fileUrl, filePath);
+
+      final params = SaveFileDialogParams(sourceFilePath: filePath);
+      final finalPath = await FlutterFileDialog.saveFile(params: params);
+
+      if (finalPath != null) {
+        message = 'File saved to disk';
+      } else {
+        message = 'Download cancelled';
+      }
+    } catch (e) {
+      developer.log('Error saving file: $e');
+      message = e.toString();
+    }
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    }
+  }
+
+  Future<void> _launchURL(String fileUrl, BuildContext context) async {
+    final Uri uri = Uri.parse(fileUrl);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      developer.log('fileUrl: $fileUrl, uri: $uri');
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not open file')));
+      }
+    }
   }
 }

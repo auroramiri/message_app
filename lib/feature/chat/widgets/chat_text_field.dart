@@ -1,4 +1,6 @@
+import 'dart:developer';
 import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -70,24 +72,78 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
     }
   }
 
-  void sendFileMessage(var file, MessageType messageType) async {
+  void pickFile() async {
+    log('pickFile');
+
     try {
-      ref
-          .read(chatControllerProvider)
-          .sendFileMessage(context, file, widget.receiverId, messageType);
-      await Future.delayed(const Duration(milliseconds: 500));
-      SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
-        if (widget.scrollController.hasClients) {
-          widget.scrollController.animateTo(
-            widget.scrollController.position.maxScrollExtent,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOut,
-          );
-        }
-      });
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        allowMultiple: false,
+      );
+
+      // Check if the widget is still mounted before proceeding
+      if (!mounted) {
+        log('Widget unmounted, not proceeding with file sending.');
+        return;
+      }
+
+      if (result != null && result.files.single.path != null) {
+        log('File picked: ${result.files.single.path}');
+        final filePath = result.files.single.path!;
+        final file = File(filePath);
+
+        final fileName = result.files.single.name;
+
+        log('File type: ${file.runtimeType}');
+        log('MessageType: ${MessageType.file}');
+
+        sendFileMessage(file, MessageType.file, fileName: fileName);
+        setState(() => cardHeight = 0);
+      } else {
+        log('No file picked or path is null');
+      }
     } catch (e) {
       if (!mounted) return;
-      showAllertDialog(context: context, message: 'Error sending file: $e');
+      showAllertDialog(context: context, message: e.toString());
+    }
+  }
+
+  void sendFileMessage(
+    var file,
+    MessageType messageType, {
+    String? fileName,
+  }) async {
+    try {
+      if (file == null) {
+        log('Error: File is null');
+        if (context.mounted) {
+          showAllertDialog(context: context, message: 'Error: File is null');
+        }
+        return;
+      }
+
+      ref
+          .read(chatControllerProvider)
+          .sendFileMessage(
+            context,
+            file,
+            widget.receiverId,
+            messageType,
+            fileName: fileName,
+          );
+
+      await Future.delayed(const Duration(milliseconds: 500));
+      SchedulerBinding.instance.addPostFrameCallback((timeStamp) {
+        widget.scrollController.animateTo(
+          widget.scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      });
+    } catch (e) {
+      log('Error sending file message: $e');
+      if (!mounted) return;
+      showAllertDialog(context: context, message: e.toString());
     }
   }
 
@@ -172,7 +228,7 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       iconWithText(
-                        onPressed: () {},
+                        onPressed: pickFile,
                         icon: Icons.book,
                         text: 'File',
                         background: const Color(0xFF7F66FE),
