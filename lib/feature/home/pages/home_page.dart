@@ -1,7 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/auth/controller/auth_controller.dart';
 import 'package:message_app/feature/home/pages/profile_home_page.dart';
@@ -43,7 +43,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Бундъварка', style: TextStyle(letterSpacing: 1)),
+          title: Text('app_name'.tr, style: TextStyle(letterSpacing: 1)),
           elevation: 1,
           actions: [
             CustomIconButton(onPressed: () {}, icon: Icons.search),
@@ -54,9 +54,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             labelStyle: TextStyle(fontWeight: FontWeight.bold),
             splashFactory: NoSplash.splashFactory,
             tabs: [
-              Tab(text: 'CHATS'),
-              Tab(text: 'PROFILE'),
-              Tab(text: 'SETTINGS'),
+              Tab(text: 'chats'.tr),
+              Tab(text: 'profile'.tr),
+              Tab(text: 'settings'.tr),
             ],
           ),
         ),

@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -73,34 +72,34 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
   }
 
   void pickFile() async {
-    log('pickFile');
-
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.any,
         allowMultiple: false,
       );
 
-      // Check if the widget is still mounted before proceeding
-      if (!mounted) {
-        log('Widget unmounted, not proceeding with file sending.');
-        return;
-      }
-
       if (result != null && result.files.single.path != null) {
-        log('File picked: ${result.files.single.path}');
         final filePath = result.files.single.path!;
         final file = File(filePath);
-
         final fileName = result.files.single.name;
 
-        log('File type: ${file.runtimeType}');
-        log('MessageType: ${MessageType.file}');
+        // Check file size - 30MB limit (30 * 1024 * 1024 bytes)
+        final fileSize = await file.length();
+        final maxSize = 30 * 1024 * 1024; // 30MB in bytes
+
+        if (fileSize > maxSize) {
+          if (mounted) {
+            showAllertDialog(
+              context: context,
+              message:
+                  'File size exceeds 30MB limit. Please select a smaller file.',
+            );
+          }
+          return;
+        }
 
         sendFileMessage(file, MessageType.file, fileName: fileName);
         setState(() => cardHeight = 0);
-      } else {
-        log('No file picked or path is null');
       }
     } catch (e) {
       if (!mounted) return;
@@ -115,7 +114,6 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
   }) async {
     try {
       if (file == null) {
-        log('Error: File is null');
         if (context.mounted) {
           showAllertDialog(context: context, message: 'Error: File is null');
         }
@@ -141,7 +139,6 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
         );
       });
     } catch (e) {
-      log('Error sending file message: $e');
       if (!mounted) return;
       showAllertDialog(context: context, message: e.toString());
     }

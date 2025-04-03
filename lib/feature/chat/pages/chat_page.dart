@@ -306,10 +306,8 @@ class ChatPage extends ConsumerWidget {
       ),
       body: Stack(
         children: [
-          // chat background image
           chatBackgroundAsync.when(
             data: (backgroundImageUrl) {
-              // If there's a custom background image, use it
               if (backgroundImageUrl != null && backgroundImageUrl.isNotEmpty) {
                 return CachedNetworkImage(
                   imageUrl: backgroundImageUrl,
@@ -334,7 +332,6 @@ class ChatPage extends ConsumerWidget {
                       ),
                 );
               } else {
-                // Use default background if no custom background is set
                 return Image(
                   height: double.maxFinite,
                   width: double.maxFinite,
@@ -361,7 +358,6 @@ class ChatPage extends ConsumerWidget {
                   color: context.theme.chatPageDoodleColor,
                 ),
           ),
-          // Stream of Chat
           Padding(
             padding: const EdgeInsets.only(bottom: 60),
             child: StreamBuilder(
@@ -431,7 +427,6 @@ class ChatPage extends ConsumerWidget {
                           .where((msg) => msg.type == my_type.MessageType.image)
                           .toList();
 
-                  // Update the provider with image messages
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     ref.read(chatImagesProvider(user.uid).notifier).state =
                         imageMessages;

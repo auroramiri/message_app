@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:get/get.dart';
+import 'package:message_app/common/localization/app_translations.dart';
 import 'package:message_app/common/routes/routes.dart';
 import 'package:message_app/common/theme/dark_theme.dart';
 import 'package:message_app/common/theme/light_theme.dart';
@@ -99,15 +102,14 @@ class _ChatAppState extends ConsumerState<ChatApp> {
       }
     });
 
-    // Handle background messages
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
   void _showNotification(RemoteNotification notification) async {
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'channel_id', // Channel ID
-      'channel_name', // Channel Name
-      channelDescription: 'channel_description', // Channel Description
+      'channel_id',
+      'channel_name',
+      channelDescription: 'channel_description',
       importance: Importance.max,
       priority: Priority.high,
     );
@@ -126,12 +128,20 @@ class _ChatAppState extends ConsumerState<ChatApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'БундъВарка',
       theme: lightTheme(),
       darkTheme: darkTheme(),
       themeMode: ThemeMode.system,
+      translations: AppTranslations(),
+      fallbackLocale: const Locale('en', 'US'),
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [Locale('en', 'US'), Locale('ru', 'RU'), Locale('de', 'DE')],
       home: ref
           .watch(userInfoAuthProvider)
           .when(

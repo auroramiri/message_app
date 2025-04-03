@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:message_app/feature/welcome/pages/widgets/language_button.dart';
 
 class StatusHomePage extends StatelessWidget {
   const StatusHomePage({super.key});
@@ -6,10 +8,25 @@ class StatusHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: Text('Settings Home Page')),
+      appBar: AppBar(
+        title: Text('hello'.tr),
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'welcome'.tr,
+              style: const TextStyle(fontSize: 24),
+            ),
+            const SizedBox(height: 20),
+            const LanguageButton(),
+          ],
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {},
-        child: Icon(Icons.edit),
+        child: const Icon(Icons.edit),
       ),
     );
   }

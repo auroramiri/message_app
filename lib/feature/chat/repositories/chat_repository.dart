@@ -534,29 +534,27 @@ class ChatRepository {
 
   void saveToMessageCollection({
     required String receiverId,
-    required String textMessage, // This is now the filename for files
+    required String textMessage,
     required DateTime timeSent,
     required String textMessageId,
     required String senderUsername,
     required String receiverUsername,
     required MessageType messageType,
     int? fileSize,
-    String? fileUrl, // Add this line
+    String? fileUrl,
   }) async {
     final message = MessageModel(
       senderId: auth.currentUser!.uid,
       receiverId: receiverId,
-      textMessage: textMessage, // Filename for files
+      textMessage: textMessage,
       type: messageType,
       timeSent: timeSent,
       messageId: textMessageId,
       isSeen: false,
       notificationSent: false,
       fileSize: fileSize,
-      fileUrl: fileUrl, // And this line
+      fileUrl: fileUrl,
     );
-
-    log('Saving message: ${message.toMap()}');
 
     // sender
     await firestore
@@ -568,8 +566,6 @@ class ChatRepository {
         .doc(textMessageId)
         .set(message.toMap());
 
-    log('Message saved to sender collection');
-
     // receiver
     await firestore
         .collection('users')
@@ -579,8 +575,6 @@ class ChatRepository {
         .collection('messages')
         .doc(textMessageId)
         .set(message.toMap());
-
-    log('Message saved to receiver collection');
   }
 
   void saveAsLastMessage({

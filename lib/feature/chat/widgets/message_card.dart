@@ -8,17 +8,14 @@ import 'package:intl/intl.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/message_model.dart';
-import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
 import 'package:message_app/feature/chat/pages/chat_page.dart';
 import 'dart:developer' as developer;
 
 import 'package:message_app/feature/chat/pages/image_viewer_page.dart';
 import 'package:message_app/feature/chat/widgets/message_time_send.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
-import 'dart:math';
 import 'package:path_provider/path_provider.dart';
 
 class MessageCard extends ConsumerWidget {
@@ -641,17 +638,4 @@ class MessageCard extends ConsumerWidget {
     }
   }
 
-  Future<void> _launchURL(String fileUrl, BuildContext context) async {
-    final Uri uri = Uri.parse(fileUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      developer.log('fileUrl: $fileUrl, uri: $uri');
-      if (context.mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Could not open file')));
-      }
-    }
-  }
 }
