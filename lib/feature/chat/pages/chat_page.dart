@@ -6,6 +6,7 @@ import 'package:custom_clippers/custom_clippers.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
 import 'package:message_app/common/helper/last_seen_message.dart';
 import 'package:message_app/common/models/message_model.dart';
@@ -60,29 +61,22 @@ class ChatPage extends ConsumerWidget {
       context: context,
       builder:
           (context) => AlertDialog(
-            title: const Text('Clear Chat History'),
-            content: const Text(
-              'Are you sure you want to delete all messages in this chat? '
-              'This action cannot be undone.',
-            ),
+            title: Text('clear_chat_history'.tr),
+            content: Text('delete_chat_confirmation'.tr),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('CANCEL'),
+                child: Text('cancel'.tr),
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  'DELETE',
-                  style: TextStyle(color: Colors.red),
-                ),
+                child: Text('delete'.tr, style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
     );
     if (context.mounted) {
       if (result == true) {
-        // Show loading indicator
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -91,32 +85,27 @@ class ChatPage extends ConsumerWidget {
         );
 
         try {
-          // Delete the chat
           await ref
               .read(chatControllerProvider)
               .deleteChat(receiverId: user.uid, context: context);
 
-          // Close loading indicator
           if (context.mounted) Navigator.pop(context);
 
-          // Show success message
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Chat history cleared successfully'),
+              SnackBar(
+                content: Text('chat_history_cleared'.tr),
                 duration: Duration(seconds: 2),
               ),
             );
           }
         } catch (e) {
-          // Close loading indicator
           if (context.mounted) Navigator.pop(context);
 
-          // Show error message
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Failed to clear chat history: ${e.toString()}'),
+                content: Text('failed_to_clear_chat'.tr + e.toString()),
                 duration: const Duration(seconds: 3),
               ),
             );
@@ -209,8 +198,8 @@ class ChatPage extends ConsumerWidget {
 
                     return Text(
                       singleUserModel.active
-                          ? 'online'
-                          : "last seen $lastMessage ago",
+                          ? 'online'.tr
+                          : 'last_seen'.tr + lastMessage + 'ago'.tr,
                       style: const TextStyle(fontSize: 12, color: Colors.white),
                     );
                   },
@@ -268,19 +257,21 @@ class ChatPage extends ConsumerWidget {
                           receiverId: user.uid,
                           context: context,
                         );
-                    ref.refresh(chatBackgroundProvider(user.uid));
+                    final _ = ref.refresh(chatBackgroundProvider(user.uid));
                     if (context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Chat background updated'),
-                        ),
+                        SnackBar(content: Text('chat_background_updated'.tr)),
                       );
                     }
                   }
                 } catch (e) {
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Error setting background: $e')),
+                      SnackBar(
+                        content: Text(
+                          'error_setting_background'.tr + e.toString(),
+                        ),
+                      ),
                     );
                   }
                 }
@@ -292,13 +283,13 @@ class ChatPage extends ConsumerWidget {
             },
             itemBuilder:
                 (context) => [
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'set_background',
-                    child: Text('Set Background Image'),
+                    child: Text('set_background_image'.tr),
                   ),
-                  const PopupMenuItem<String>(
+                  PopupMenuItem<String>(
                     value: 'clear_chat',
-                    child: Text('Clear Chat History'),
+                    child: Text('clear_chat_history_menu'.tr),
                   ),
                 ],
           ),

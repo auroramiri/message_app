@@ -135,13 +135,18 @@ class _ChatAppState extends ConsumerState<ChatApp> {
       darkTheme: darkTheme(),
       themeMode: ThemeMode.system,
       translations: AppTranslations(),
+      locale: Get.fallbackLocale,
       fallbackLocale: const Locale('en', 'US'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [Locale('en', 'US'), Locale('ru', 'RU'), Locale('de', 'DE')],
+      supportedLocales: const [
+        Locale('en', 'US'),
+        Locale('ru', 'RU'),
+        Locale('de', 'DE'),
+      ],
       home: ref
           .watch(userInfoAuthProvider)
           .when(

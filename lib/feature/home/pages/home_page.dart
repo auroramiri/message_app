@@ -43,7 +43,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('app_name'.tr, style: TextStyle(letterSpacing: 1)),
+          title: Text('app_title'.tr, style: TextStyle(letterSpacing: 1)),
           elevation: 1,
           actions: [
             CustomIconButton(onPressed: () {}, icon: Icons.search),
