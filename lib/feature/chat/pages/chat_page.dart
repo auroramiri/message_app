@@ -215,22 +215,28 @@ class ChatPage extends ConsumerWidget {
         actions: [
           CustomIconButton(
             onPressed: () {},
-            icon: Icons.video_call,
+            icon: Icons.attach_file,
             iconColor: Colors.white,
           ),
           CustomIconButton(
             onPressed: () {
               final videoMessages = ref.read(chatVideosProvider(user.uid));
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (context) => ChatVideoGalleryPage(
-                        videoMessages: videoMessages,
-                        chatName: user.username,
-                      ),
-                ),
-              );
+              if (videoMessages.isNotEmpty) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => ChatVideoGalleryPage(
+                          videoMessages: videoMessages,
+                          chatName: user.username,
+                        ),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('No videos in this chat')),
+                );
+              }
             },
             icon: Icons.video_library,
             iconColor: Colors.white,

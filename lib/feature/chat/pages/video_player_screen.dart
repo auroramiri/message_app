@@ -1,4 +1,9 @@
+import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'package:http/http.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoPlayerScreen extends StatefulWidget {
@@ -104,6 +109,44 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
     super.dispose();
   }
 
+  var random = Random();
+  Future<void> _saveVideo() async {
+    late String message;
+    try {
+      final Response response = await get(Uri.parse(widget.videoUrl));
+      final dir = await getTemporaryDirectory();
+
+      var filename = '${dir.path}/SaveVideo${random.nextInt(100)}.mp4';
+
+      final file = File(filename);
+      await file.writeAsBytes(response.bodyBytes);
+
+      final params = SaveFileDialogParams(sourceFilePath: file.path);
+      final finalPath = await FlutterFileDialog.saveFile(params: params);
+
+      if (finalPath != null) {
+        message = 'Image saved to disk';
+      }
+    } catch (e) {
+      if (mounted) {
+        message = e.toString();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            backgroundColor: Color(0xFFe91e63),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -164,9 +207,13 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                     : GestureDetector(
                       onTap: _toggleControls,
                       behavior: HitTestBehavior.opaque,
-                      child: AspectRatio(
-                        aspectRatio: _controller.value.aspectRatio,
-                        child: VideoPlayer(_controller),
+                      child: FittedBox(
+                        fit: BoxFit.contain,
+                        child: SizedBox(
+                          width: _controller.value.size.width,
+                          height: _controller.value.size.height,
+                          child: VideoPlayer(_controller),
+                        ),
                       ),
                     ),
           ),
@@ -271,12 +318,12 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                               // Кнопка полноэкранного режима
                               IconButton(
                                 icon: const Icon(
-                                  Icons.fullscreen,
+                                  Icons.download,
                                   color: Colors.white,
                                   size: 24,
                                 ),
                                 onPressed: () {
-                                  // Реализация полноэкранного режима при необходимости
+                                  _saveVideo();
                                 },
                               ),
                             ],

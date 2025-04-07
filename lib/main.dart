@@ -135,7 +135,7 @@ class _ChatAppState extends ConsumerState<ChatApp> {
       darkTheme: darkTheme(),
       themeMode: ThemeMode.system,
       translations: AppTranslations(),
-      locale: Get.fallbackLocale,
+      locale: Locale('en', 'US'),
       fallbackLocale: const Locale('en', 'US'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

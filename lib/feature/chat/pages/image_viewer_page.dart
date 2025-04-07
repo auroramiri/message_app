@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:http/http.dart';
+import 'package:message_app/feature/chat/widgets/build_image_action_button.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:photo_view/photo_view.dart';
 
@@ -78,7 +79,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                         widget.allImages![index],
                       ),
                       minScale: PhotoViewComputedScale.contained,
-                      maxScale: PhotoViewComputedScale.covered * 3,
+                      maxScale: PhotoViewComputedScale.covered * 4,
                       backgroundDecoration: const BoxDecoration(
                         color: Colors.black,
                       ),
@@ -94,13 +95,14 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                           ),
                       customSize: MediaQuery.of(context).size,
                       enableRotation: true,
+                      filterQuality: FilterQuality.high,
                     );
                   },
                 )
                 : PhotoView(
                   imageProvider: CachedNetworkImageProvider(widget.imageUrl),
                   minScale: PhotoViewComputedScale.contained,
-                  maxScale: PhotoViewComputedScale.covered * 3,
+                  maxScale: PhotoViewComputedScale.covered * 4,
                   backgroundDecoration: const BoxDecoration(
                     color: Colors.black,
                   ),
@@ -116,6 +118,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                       ),
                   customSize: MediaQuery.of(context).size,
                   enableRotation: true,
+                  filterQuality: FilterQuality.high,
                 ),
             AnimatedOpacity(
               opacity: _isToolbarVisible ? 1.0 : 0.0,
@@ -148,40 +151,63 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                 ),
               ),
             ),
-
             AnimatedPositioned(
               duration: const Duration(milliseconds: 200),
               bottom: _isToolbarVisible ? 0 : -80,
               left: 0,
               right: 0,
               child: Container(
-                height: 80,
+                height: 120,
                 color: Colors.black.withValues(alpha: 0.4),
                 child: SafeArea(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  child: Column(
                     children: [
-                      _buildActionButton(
-                        icon: Icons.save_alt,
-                        label: 'Save',
-                        onTap: _saveImage,
+                      Padding(
+                        padding: const EdgeInsets.all(10),
+                        child: AnimatedOpacity(
+                          opacity: _isToolbarVisible ? 1.0 : 0.0,
+                          duration: const Duration(milliseconds: 200),
+                          child: Positioned(
+                            bottom: 90,
+                            left: 0,
+                            right: 0,
+                            child: Center(
+                              child: Text(
+                                'Swipe up to close',
+                                style: TextStyle(
+                                  color: Colors.white.withValues(alpha: 0.7),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
-                      _buildActionButton(
-                        icon: Icons.content_copy,
-                        label: 'Copy URL',
-                        onTap: () => _copyImageUrl(context),
-                      ),
-                      _buildActionButton(
-                        icon: Icons.info_outline,
-                        label: 'Info',
-                        onTap: () => _showImageInfo(context),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          buildActionButton(
+                            icon: Icons.save_alt,
+                            label: 'Save',
+                            onTap: _saveImage,
+                          ),
+                          buildActionButton(
+                            icon: Icons.content_copy,
+                            label: 'Copy URL',
+                            onTap: () => _copyImageUrl(context),
+                          ),
+                          buildActionButton(
+                            icon: Icons.info_outline,
+                            label: 'Info',
+                            onTap: () => _showImageInfo(context),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-
             if (hasMultipleImages && _isToolbarVisible)
               Positioned(
                 left: 0,
@@ -223,58 +249,8 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                   ],
                 ),
               ),
-
-            AnimatedOpacity(
-              opacity: _isToolbarVisible ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Positioned(
-                bottom: 90,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: Text(
-                    'Swipe up to close',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.7),
-                      fontSize: 14,
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildActionButton({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool isLoading = false,
-  }) {
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          isLoading
-              ? const SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2,
-                ),
-              )
-              : Icon(icon, color: Colors.white, size: 24),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(color: Colors.white, fontSize: 12),
-          ),
-        ],
       ),
     );
   }
