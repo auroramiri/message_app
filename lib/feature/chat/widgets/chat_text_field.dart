@@ -45,6 +45,88 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
     }
   }
 
+  void sendVideoMessageFromGallery() async {
+  try {
+    debugPrint('Starting video selection from gallery');
+    final picker = ImagePicker();
+    final pickedVideo = await picker.pickVideo(
+      source: ImageSource.gallery,
+      maxDuration: const Duration(minutes: 10),
+    );
+
+    if (pickedVideo != null) {
+      debugPrint('Video selected: ${pickedVideo.path}');
+      final videoFile = File(pickedVideo.path);
+
+      final fileSize = await videoFile.length();
+      final maxSize = 50 * 1024 * 1024;
+
+      debugPrint('Video file size: ${fileSize / 1024 / 1024}MB');
+
+      if (fileSize > maxSize) {
+        if (mounted) {
+          showAllertDialog(
+            context: context,
+            message:
+                'Video size exceeds 50MB limit. Please select a smaller video.',
+          );
+        }
+        return;
+      }
+
+      sendFileMessage(videoFile, MessageType.video);
+      setState(() => cardHeight = 0);
+    } else {
+      debugPrint('No video selected');
+    }
+  } catch (e) {
+    debugPrint('Error selecting video: $e');
+    if (!mounted) return;
+    showAllertDialog(context: context, message: 'Error selecting video: $e');
+  }
+}
+
+  void pickVideoFromCamera() async {
+    if (cardHeight > 0) {
+      setState(() => cardHeight = 0);
+    }
+    try {
+      final pickedVideo = await ImagePicker().pickVideo(
+        source: ImageSource.camera,
+        maxDuration: const Duration(minutes: 5),
+      );
+      if (pickedVideo != null) {
+        final videoFile = File(pickedVideo.path);
+        if (await videoFile.exists()) {
+          final fileSize = await videoFile.length();
+          final maxSize = 50 * 1024 * 1024;
+
+          if (fileSize > maxSize) {
+            if (mounted) {
+              showAllertDialog(
+                context: context,
+                message:
+                    'Video size exceeds 50MB limit. Please record a shorter video.',
+              );
+            }
+            return;
+          }
+
+          sendFileMessage(videoFile, MessageType.video);
+        } else {
+          if (!mounted) return;
+          showAllertDialog(
+            context: context,
+            message: 'Error: Video file not found',
+          );
+        }
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showAllertDialog(context: context, message: 'Error recording video: $e');
+    }
+  }
+
   void pickImageFromCamera() async {
     if (cardHeight > 0) {
       setState(() => cardHeight = 0);
@@ -83,9 +165,8 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
         final file = File(filePath);
         final fileName = result.files.single.name;
 
-        // Check file size - 30MB limit (30 * 1024 * 1024 bytes)
         final fileSize = await file.length();
-        final maxSize = 30 * 1024 * 1024; // 30MB in bytes
+        final maxSize = 30 * 1024 * 1024;
 
         if (fileSize > maxSize) {
           if (mounted) {
@@ -240,6 +321,12 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
                         onPressed: sendImageMessageFromGallery,
                         icon: Icons.photo,
                         text: 'Gallery',
+                        background: const Color(0xFFC861F9),
+                      ),
+                      iconWithText(
+                        onPressed: sendVideoMessageFromGallery,
+                        icon: Icons.movie,
+                        text: 'Video',
                         background: const Color(0xFFC861F9),
                       ),
                     ],

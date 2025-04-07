@@ -51,7 +51,8 @@ class ChatImageGalleryPage extends ConsumerWidget {
                         MaterialPageRoute(
                           builder:
                               (context) => ImageViewerPage(
-                                imageUrl: message.textMessage,
+                                imageUrl:
+                                    message.fileUrl ?? message.textMessage,
                                 allImages:
                                     imageMessages
                                         .map((m) => m.textMessage)
@@ -64,7 +65,7 @@ class ChatImageGalleryPage extends ConsumerWidget {
                     child: Hero(
                       tag: 'gallery_image_${message.messageId}',
                       child: CachedNetworkImage(
-                        imageUrl: message.textMessage,
+                        imageUrl: message.fileUrl ?? message.textMessage,
                         fit: BoxFit.cover,
                         placeholder:
                             (context, url) => Container(

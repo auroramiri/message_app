@@ -12,6 +12,7 @@ import 'package:message_app/common/helper/last_seen_message.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/auth/pages/image_picker_page.dart';
 import 'package:message_app/feature/chat/pages/chat_image_gallery_page.dart';
+import 'package:message_app/feature/chat/pages/chat_video_gallery_page.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -40,6 +41,10 @@ final chatImagesProvider = StateProvider.family<List<MessageModel>, String>(
   (ref, chatId) => [],
 );
 
+final chatVideosProvider = StateProvider.family<List<MessageModel>, String>(
+  (ref, chatId) => [],
+);
+
 final tempBackgroundImageProvider = StateProvider<Uint8List?>((ref) => null);
 
 class ChatPage extends ConsumerWidget {
@@ -52,7 +57,6 @@ class ChatPage extends ConsumerWidget {
     'assets/images/doodle_bg.png',
   );
 
-  // Method to show confirmation dialog for deleting chat
   Future<void> _showDeleteChatConfirmation(
     BuildContext context,
     WidgetRef ref,
@@ -215,8 +219,20 @@ class ChatPage extends ConsumerWidget {
             iconColor: Colors.white,
           ),
           CustomIconButton(
-            onPressed: () {},
-            icon: Icons.call,
+            onPressed: () {
+              final videoMessages = ref.read(chatVideosProvider(user.uid));
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ChatVideoGalleryPage(
+                        videoMessages: videoMessages,
+                        chatName: user.username,
+                      ),
+                ),
+              );
+            },
+            icon: Icons.video_library,
             iconColor: Colors.white,
           ),
           CustomIconButton(
@@ -418,9 +434,16 @@ class ChatPage extends ConsumerWidget {
                           .where((msg) => msg.type == my_type.MessageType.image)
                           .toList();
 
+                  final videoMessages =
+                      messages
+                          .where((msg) => msg.type == my_type.MessageType.video)
+                          .toList();
+
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     ref.read(chatImagesProvider(user.uid).notifier).state =
                         imageMessages;
+                    ref.read(chatVideosProvider(user.uid).notifier).state =
+                        videoMessages;
                   });
                 }
 

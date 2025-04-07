@@ -112,8 +112,10 @@ class ChatRepository {
   }) async {
     try {
       String actualReceiverId = receiverId ?? '';
+      log('Starting message deletion process.');
 
       if (actualReceiverId.isEmpty) {
+        log('Receiver ID is empty. Searching for message in all chats.');
         final userChats =
             await firestore
                 .collection('users')
@@ -125,6 +127,7 @@ class ChatRepository {
 
         for (var chatDoc in userChats.docs) {
           final chatId = chatDoc.id;
+          log('Checking chat ID: $chatId');
           final messageDoc =
               await firestore
                   .collection('users')
@@ -138,6 +141,7 @@ class ChatRepository {
           if (messageDoc.exists) {
             actualReceiverId = chatId;
             messageFound = true;
+            log('Message found in chat ID: $chatId');
             break;
           }
         }
@@ -147,6 +151,7 @@ class ChatRepository {
         }
       }
 
+      log('Deleting message from sender\'s chat.');
       await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
@@ -156,6 +161,7 @@ class ChatRepository {
           .doc(messageId)
           .delete();
 
+      log('Deleting message from receiver\'s chat.');
       await firestore
           .collection('users')
           .doc(actualReceiverId)
@@ -165,6 +171,7 @@ class ChatRepository {
           .doc(messageId)
           .delete();
 
+      log('Fetching remaining messages.');
       final messages =
           await firestore
               .collection('users')
@@ -179,6 +186,7 @@ class ChatRepository {
       if (messages.docs.isNotEmpty) {
         final lastMessage = MessageModel.fromMap(messages.docs.first.data());
 
+        log('Fetching sender and receiver data.');
         final currentUserData =
             await firestore
                 .collection('users')
@@ -214,6 +222,7 @@ class ChatRepository {
               break;
           }
 
+          log('Saving last message.');
           saveAsLastMessage(
             senderUserData: senderData,
             receiverUserData: receiverUserData,
@@ -223,6 +232,7 @@ class ChatRepository {
           );
         }
       } else {
+        log('No messages left. Saving "No messages" as last message.');
         final currentUserData =
             await firestore
                 .collection('users')
@@ -357,7 +367,7 @@ class ChatRepository {
       final timeSent = DateTime.now();
       final messageId = const Uuid().v1();
       log(
-        'Sending file message: file = $file, receiverId = $receiverId, messageType = $messageType, fileName = $fileName',
+        'Sending file message: file = ${messageType.type}, receiverId = $receiverId, messageType = $messageType, fileName = $fileName',
       );
 
       int? fileSize;

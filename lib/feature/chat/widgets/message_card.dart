@@ -11,11 +11,11 @@ import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
 import 'package:message_app/feature/chat/pages/chat_page.dart';
 import 'dart:developer' as developer;
-
 import 'package:message_app/feature/chat/pages/image_viewer_page.dart';
 import 'package:message_app/feature/chat/widgets/message_time_send.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'package:message_app/feature/home/pages/video_player_screen.dart';
 import 'package:path_provider/path_provider.dart';
 
 class MessageCard extends ConsumerWidget {
@@ -340,7 +340,9 @@ class MessageCard extends ConsumerWidget {
                                     Hero(
                                       tag: 'image_${message.messageId}',
                                       child: CachedNetworkImage(
-                                        imageUrl: message.textMessage,
+                                        imageUrl:
+                                            message.fileUrl ??
+                                            message.textMessage,
                                         placeholder:
                                             (context, url) => Container(
                                               width: 200,
@@ -480,6 +482,83 @@ class MessageCard extends ConsumerWidget {
                     ),
                   ),
                 ),
+              if (message.type == my_type.MessageType.video)
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) =>
+                                VideoPlayerScreen(videoUrl: message.fileUrl!),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    height: 250,
+                    width: 250,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // You might want to add a thumbnail here if available
+                        // For now, just showing a play button
+                        const Icon(
+                          Icons.play_circle_fill,
+                          color: Colors.white,
+                          size: 60,
+                        ),
+                        Positioned(
+                          bottom: 10,
+                          right: 10,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.videocam,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Video',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    MessageTimeSend(message: message),
+                                    if (isSender) const SizedBox(width: 3),
+                                    if (isSender)
+                                      _buildReadStatusIndicator(
+                                        context,
+                                        isImageMessage: true,
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -497,8 +576,9 @@ class MessageCard extends ConsumerWidget {
       MaterialPageRoute(
         builder:
             (context) => ImageViewerPage(
-              imageUrl: message.textMessage,
-              allImages: imageMessages.map((m) => m.textMessage).toList(),
+              imageUrl: message.fileUrl ?? message.textMessage,
+              allImages:
+                  imageMessages.map((m) => m.fileUrl ?? m.textMessage).toList(),
               initialIndex: index >= 0 ? index : 0,
             ),
       ),
@@ -638,4 +718,22 @@ class MessageCard extends ConsumerWidget {
     }
   }
 
+  // Widget _buildMessageContent(BuildContext context) {
+  //   switch (message.type) {
+  //     case MessageType.text:
+  //       return DisplayTextCard(message: message, isSender: isSender);
+  //     case MessageType.image:
+  //       return DisplayImageCard(message: message, isSender: isSender);
+  //     case MessageType.video:
+  //       return VideoThumbnail(
+  //         videoUrl: message.fileUrl!,
+  //         thumbnailUrl: message.thumbnailUrl,
+  //         isSender: isSender,
+  //       );
+  //     case MessageType.file:
+  //       return DisplayFileCard(message: message, isSender: isSender);
+  //     default:
+  //       return DisplayTextCard(message: message, isSender: isSender);
+  //   }
+  // }
 }
