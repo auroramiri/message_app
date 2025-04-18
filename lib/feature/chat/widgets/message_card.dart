@@ -8,6 +8,7 @@ import 'package:message_app/common/utils/file_utils.dart';
 import 'package:message_app/feature/chat/pages/chat_page.dart';
 import 'package:message_app/feature/chat/pages/video_player_screen.dart';
 import 'package:message_app/common/models/message_model.dart';
+import 'package:message_app/feature/chat/widgets/audio_message_player.dart';
 import 'package:message_app/feature/chat/widgets/build_image_message.dart';
 import 'package:message_app/feature/chat/widgets/message_time_send.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
@@ -63,6 +64,13 @@ class MessageCard extends ConsumerWidget {
               _buildMessageContent(context, isUploading, ref),
               if (message.type == my_type.MessageType.image && !isUploading)
                 _buildImageOverlay(context),
+              if (isUploading && message.type == my_type.MessageType.video)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
             ],
           ),
         ),
@@ -102,10 +110,28 @@ class MessageCard extends ConsumerWidget {
       case my_type.MessageType.file:
         return _buildFileMessage(context);
       case my_type.MessageType.video:
-        return _buildVideoMessage(context);
+        return _buildVideoMessage(context, isUploading);
+      case my_type.MessageType.audio:
+        return _buildAudioMessage(context);
       default:
         return _buildTextMessage(context);
     }
+  }
+
+  Widget _buildAudioMessage(BuildContext context) {
+    return Column(
+      children: [
+        AudioMessagePlayer(message: message),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            MessageTimeSend(message: message),
+            if (isSender) const SizedBox(width: 3),
+            if (isSender) _buildReadStatusIndicator(context),
+          ],
+        ),
+      ],
+    );
   }
 
   Widget _buildTextMessage(BuildContext context) {
@@ -280,99 +306,101 @@ class MessageCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildVideoMessage(BuildContext context) {
+  Widget _buildVideoMessage(BuildContext context, bool isUploading) {
     return FutureBuilder<String?>(
       future: generateThumbnailFileFromUrl(message.fileUrl!),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-          return const Center(child: Icon(Icons.error_outline));
-        }
-
-        final thumbnailFile = snapshot.data!;
-
-        return InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => VideoPlayerScreen(videoUrl: message.fileUrl!),
-              ),
-            );
-          },
-          child: Container(
-            height: 250,
-            width: 250,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(15),
-              image: DecorationImage(
-                image: FileImage(File(thumbnailFile)),
-                fit: BoxFit.cover,
-              ),
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                const Icon(
-                  Icons.play_circle_fill,
-                  color: Colors.white,
-                  size: 60,
-                ),
-                Positioned(
-                  bottom: 10,
-                  right: 10,
+        return Container(
+          height: 250,
+          width: 250,
+          decoration: BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Center(child: CircularProgressIndicator())
+              else if (snapshot.hasError ||
+                  !snapshot.hasData ||
+                  snapshot.data == null)
+                const Center(child: Icon(Icons.error_outline))
+              else
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) =>
+                                VideoPlayerScreen(videoUrl: message.fileUrl!),
+                      ),
+                    );
+                  },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
+                    height: 250,
+                    width: 250,
                     decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(15),
+                      image: DecorationImage(
+                        image: FileImage(File(snapshot.data!)),
+                        fit: BoxFit.cover,
+                      ),
                     ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.videocam,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Video',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            MessageTimeSend(message: message),
-                            if (isSender) const SizedBox(width: 3),
-                            if (isSender)
-                              _buildReadStatusIndicator(
-                                context,
-                                isImageMessage: true,
-                              ),
-                          ],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          formatFileSize(message.fileSize!.toDouble()),
-                          style: TextStyle(color: Colors.white, fontSize: 10),
-                        ),
-                      ],
+                    child: const Icon(
+                      Icons.play_circle_fill,
+                      color: Colors.white,
+                      size: 60,
                     ),
                   ),
                 ),
-              ],
-            ),
+              Positioned(
+                bottom: 10,
+                right: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.videocam, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
+                      const Text(
+                        'Video',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                      const SizedBox(width: 4),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          MessageTimeSend(message: message),
+                          if (isSender) const SizedBox(width: 3),
+                          if (isSender)
+                            _buildReadStatusIndicator(
+                              context,
+                              isImageMessage: true,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        formatFileSize(message.fileSize!.toDouble()),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },

@@ -3,8 +3,8 @@ import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/message_model.dart';
 
 Widget buildReadStatusIndicator(
-  MessageModel message,
-  BuildContext context, {
+  BuildContext context,
+  MessageModel message, {
   bool isImageMessage = false,
 }) {
   final baseColor = isImageMessage ? Colors.white : context.theme.greyColor!;

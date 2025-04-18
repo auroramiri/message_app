@@ -158,7 +158,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       ),
       body: Stack(
         children: [
-          // Основной контент (видео)
           Center(
             child:
                 _hasError

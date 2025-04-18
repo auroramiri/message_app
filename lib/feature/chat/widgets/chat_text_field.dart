@@ -11,6 +11,9 @@ import 'package:message_app/common/utils/coloors.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/auth/pages/image_picker_page.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 
 class ChatTextField extends ConsumerStatefulWidget {
   const ChatTextField({
@@ -29,9 +32,51 @@ class ChatTextField extends ConsumerStatefulWidget {
 class _ChatTextFieldState extends ConsumerState<ChatTextField> {
   late TextEditingController messageController;
   File? imageCamera;
-
   bool isMessageIconEnabled = false;
   double cardHeight = 0;
+
+  final recorder = AudioRecorder();
+  bool isRecording = false;
+
+  void recordAudio() async {
+    if (kIsWeb) {
+      showAllertDialog(
+        context: context,
+        message: "Audio recording is not supported on web.",
+      );
+      return;
+    }
+    try {
+      if (isRecording) {
+        final path = await recorder.stop();
+        debugPrint('Recorded audio path: $path');
+        if (path != null) {
+          final audioFile = File(path);
+          sendFileMessage(audioFile, MessageType.audio);
+        }
+      } else {
+        if (await recorder.hasPermission()) {
+          final directory = await getApplicationDocumentsDirectory();
+          final path =
+              '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          await recorder.start(const RecordConfig(), path: path);
+        } else {
+          debugPrint('No audio recording permissions.');
+        }
+      }
+      setState(() {
+        isRecording = !isRecording;
+      });
+    } catch (e) {
+      debugPrint('Error recording audio: $e');
+      if (mounted) {
+        showAllertDialog(
+          context: context,
+          message: 'Error recording audio: $e',
+        );
+      }
+    }
+  }
 
   void sendImageMessageFromGallery() async {
     final image = await Navigator.push(
@@ -46,45 +91,45 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
   }
 
   void sendVideoMessageFromGallery() async {
-  try {
-    debugPrint('Starting video selection from gallery');
-    final picker = ImagePicker();
-    final pickedVideo = await picker.pickVideo(
-      source: ImageSource.gallery,
-      maxDuration: const Duration(minutes: 10),
-    );
+    try {
+      debugPrint('Starting video selection from gallery');
+      final picker = ImagePicker();
+      final pickedVideo = await picker.pickVideo(
+        source: ImageSource.gallery,
+        maxDuration: const Duration(minutes: 10),
+      );
 
-    if (pickedVideo != null) {
-      debugPrint('Video selected: ${pickedVideo.path}');
-      final videoFile = File(pickedVideo.path);
+      if (pickedVideo != null) {
+        debugPrint('Video selected: ${pickedVideo.path}');
+        final videoFile = File(pickedVideo.path);
 
-      final fileSize = await videoFile.length();
-      final maxSize = 50 * 1024 * 1024;
+        final fileSize = await videoFile.length();
+        final maxSize = 50 * 1024 * 1024;
 
-      debugPrint('Video file size: ${fileSize / 1024 / 1024}MB');
+        debugPrint('Video file size: ${fileSize / 1024 / 1024}MB');
 
-      if (fileSize > maxSize) {
-        if (mounted) {
-          showAllertDialog(
-            context: context,
-            message:
-                'Video size exceeds 50MB limit. Please select a smaller video.',
-          );
+        if (fileSize > maxSize) {
+          if (mounted) {
+            showAllertDialog(
+              context: context,
+              message:
+                  'Video size exceeds 50MB limit. Please select a smaller video.',
+            );
+          }
+          return;
         }
-        return;
-      }
 
-      sendFileMessage(videoFile, MessageType.video);
-      setState(() => cardHeight = 0);
-    } else {
-      debugPrint('No video selected');
+        sendFileMessage(videoFile, MessageType.video);
+        setState(() => cardHeight = 0);
+      } else {
+        debugPrint('No video selected');
+      }
+    } catch (e) {
+      debugPrint('Error selecting video: $e');
+      if (!mounted) return;
+      showAllertDialog(context: context, message: 'Error selecting video: $e');
     }
-  } catch (e) {
-    debugPrint('Error selecting video: $e');
-    if (!mounted) return;
-    showAllertDialog(context: context, message: 'Error selecting video: $e');
   }
-}
 
   void pickVideoFromCamera() async {
     if (cardHeight > 0) {
@@ -235,6 +280,11 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
             receiverId: widget.receiverId,
           );
       messageController.clear();
+    } else if (isRecording) {
+      await recorder.stop();
+      setState(() {
+        isRecording = false;
+      });
     }
 
     await Future.delayed(const Duration(milliseconds: 100));
@@ -245,6 +295,24 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
         curve: Curves.easeOut,
       );
     });
+  }
+
+  Widget _buildRecordingIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.red,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.mic, color: Colors.white, size: 20),
+          const SizedBox(width: 8),
+          const Text('Recording...', style: TextStyle(color: Colors.white)),
+        ],
+      ),
+    );
   }
 
   iconWithText({
@@ -336,6 +404,7 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
             ),
           ),
         ),
+        if (isRecording) _buildRecordingIndicator(),
         Padding(
           padding: const EdgeInsets.all(5.0),
           child: Row(
@@ -399,10 +468,12 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
               ),
               const SizedBox(width: 5),
               CustomIconButton(
-                onPressed: sendTextMessage,
+                onPressed: isMessageIconEnabled ? sendTextMessage : recordAudio,
                 icon:
                     isMessageIconEnabled
                         ? Icons.send_outlined
+                        : isRecording
+                        ? Icons.stop
                         : Icons.mic_none_outlined,
                 background: Coloors.blueDark,
                 iconColor: Colors.white,

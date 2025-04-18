@@ -60,13 +60,11 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
     );
   }
 
-  // ... rest of the code ...
 
   Widget _buildVideoThumbnail(String videoUrl, String? thumbnailPath) {
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Показываем превью, если оно доступно
         if (thumbnailPath != null)
           Image.file(
             File(thumbnailPath),
@@ -81,7 +79,6 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
             height: double.infinity,
           ),
 
-        // Иконка воспроизведения поверх превью
         Container(
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.3),
@@ -91,7 +88,6 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
           child: const Icon(Icons.play_arrow, color: Colors.white, size: 30),
         ),
 
-        // Индикатор загрузки, если превью еще генерируется
         if (thumbnailPath == null)
           const CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
