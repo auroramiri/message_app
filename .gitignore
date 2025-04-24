@@ -36,6 +36,7 @@ google-services.json
 .pub/
 /build/
 /lib/firebase_options.dart
+/assets/message-app-d512b-d76c7a3d1255.json
 
 # Symbolication related
 app.*.symbols
