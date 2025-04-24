@@ -45,7 +45,9 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     usernameFocusNode = FocusNode();
     _fetchCurrentUser().then((_) {
       if (mounted) {
-        usernameController = TextEditingController(text: currentUser?.username);
+        usernameController = TextEditingController(
+          text: currentUser?.username ?? '',
+        );
       }
     });
     super.initState();
@@ -67,7 +69,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     super.dispose();
   }
 
-  saveUserDataToFirebase() async {
+  Future<void> saveUserDataToFirebase() async {
     String username = usernameController.text;
 
     if (username.isEmpty) {
@@ -81,6 +83,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
         message: 'Username must be between 3 and 20 characters',
       );
     }
+
     ref
         .read(authControllerProvider)
         .saveUserInfoToFirestore(
@@ -96,8 +99,8 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     });
   }
 
-  imagePickerTypeBottomSheet() {
-    return showModalBottomSheet(
+  Future<void> imagePickerTypeBottomSheet() async {
+    await showModalBottomSheet(
       context: context,
       builder: (context) {
         return Column(
@@ -156,7 +159,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     );
   }
 
-  pickImageFromCamera() async {
+  Future<void> pickImageFromCamera() async {
     Navigator.of(context).pop();
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.camera);
@@ -170,7 +173,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     }
   }
 
-  imagePickerIcon({
+  Widget imagePickerIcon({
     required VoidCallback onTap,
     required IconData icon,
     required String text,
@@ -263,7 +266,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
             ),
             SizedBox(height: 20),
             Text(
-              currentUser!.phoneNumber,
+              currentUser?.phoneNumber ?? 'Loading...',
               style: TextStyle(fontSize: 20, color: context.theme.greyColor),
             ),
             Row(
@@ -304,7 +307,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
               contentPadding: const EdgeInsets.only(left: 25, right: 10),
               leading: const Icon(Icons.block, color: Color(0xFFF15C6D)),
               title: Text(
-                'Delete account:  ${currentUser?.username != null ? currentUser!.username : ''}',
+                'Delete account:  ${currentUser?.username ?? 'Loading'}',
                 style: const TextStyle(color: Color(0xFFF15C6D)),
               ),
             ),

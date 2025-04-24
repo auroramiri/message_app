@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/pages/video_player_screen.dart';
-import 'package:video_thumbnail/video_thumbnail.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:video_thumbnail/video_thumbnail.dart';
 
 class ChatVideoGalleryPage extends StatefulWidget {
   final List<MessageModel> videoMessages;
@@ -31,13 +31,11 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
 
   Future<void> _generateThumbnails() async {
     for (var message in widget.videoMessages) {
-      log('Message url: ${message.fileUrl}');
+      log('Message URL: ${message.fileUrl}');
       if (message.fileUrl != null) {
         try {
           log('Generating thumbnail for video: ${message.fileUrl}');
-
           final thumbnailPath = await _generateThumbnail(message.fileUrl!);
-
           if (mounted) {
             setState(() {
               _thumbnails[message.fileUrl!] = thumbnailPath;
@@ -51,15 +49,18 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
   }
 
   Future<String?> _generateThumbnail(String videoUrl) async {
-    return VideoThumbnail.thumbnailFile(
+    final directory = await getTemporaryDirectory();
+    final thumbnailPath =
+        '${directory.path}/${DateTime.now().millisecondsSinceEpoch}.jpg';
+    await VideoThumbnail.thumbnailFile(
       video: videoUrl,
-      thumbnailPath: (await getTemporaryDirectory()).path,
+      thumbnailPath: thumbnailPath,
       imageFormat: ImageFormat.JPEG,
       maxHeight: 200,
       quality: 75,
     );
+    return thumbnailPath;
   }
-
 
   Widget _buildVideoThumbnail(String videoUrl, String? thumbnailPath) {
     return Stack(
@@ -78,7 +79,6 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
             width: double.infinity,
             height: double.infinity,
           ),
-
         Container(
           decoration: BoxDecoration(
             color: Colors.black.withValues(alpha: 0.3),
@@ -87,7 +87,6 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
           padding: const EdgeInsets.all(8),
           child: const Icon(Icons.play_arrow, color: Colors.white, size: 30),
         ),
-
         if (thumbnailPath == null)
           const CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
