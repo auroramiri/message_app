@@ -1,6 +1,10 @@
+import 'dart:convert';
+import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:just_audio/just_audio.dart';
 import 'package:message_app/common/models/message_model.dart';
+import 'package:message_app/feature/chat/widgets/config.dart';
 
 class AudioMessagePlayer extends StatefulWidget {
   final MessageModel message;
@@ -8,14 +12,15 @@ class AudioMessagePlayer extends StatefulWidget {
   const AudioMessagePlayer({super.key, required this.message});
 
   @override
-  _AudioMessagePlayerState createState() => _AudioMessagePlayerState();
+  AudioMessagePlayerState createState() => AudioMessagePlayerState();
 }
 
-class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
+class AudioMessagePlayerState extends State<AudioMessagePlayer> {
   final AudioPlayer _audioPlayer = AudioPlayer();
   bool _isPlaying = false;
   Duration _duration = Duration.zero;
   Duration _position = Duration.zero;
+  String _transcript = '';
 
   @override
   void initState() {
@@ -50,7 +55,6 @@ class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
     _audioPlayer.playerStateStream.listen((playerState) {
       if (mounted) {
         if (playerState.processingState == ProcessingState.completed) {
-          // Reset the play/pause button and position when audio completes
           setState(() {
             _isPlaying = false;
             _position = Duration.zero;
@@ -69,10 +73,47 @@ class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
       await _audioPlayer.pause();
     } else {
       if (_position >= _duration && _duration > Duration.zero) {
-        // If the audio has completed, seek to the beginning before playing
         await _audioPlayer.seek(Duration.zero);
       }
       await _audioPlayer.play();
+    }
+  }
+
+  Future<void> _transcribeAudio() async {
+    final apiKey = Config.deepgramApiKey;
+
+    final url = Uri.parse('https://api.deepgram.com/v1/listen');
+    final requestBody = {'url': widget.message.fileUrl};
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Authorization': 'Token $apiKey',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(requestBody),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        setState(() {
+          _transcript =
+              data['results']['channels'][0]['alternatives'][0]['transcript'];
+        });
+      } else {
+        log('Transcription failed: ${response.reasonPhrase}');
+      }
+    } catch (e) {
+      log('Exception occurred: $e');
+    }
+  }
+
+  void transcribeSpeechToText() {
+    if (widget.message.fileUrl != null) {
+      _transcribeAudio();
+    } else {
+      log('Audio URL is null. Cannot transcribe.');
     }
   }
 
@@ -95,7 +136,7 @@ class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
             color: Colors.black.withValues(alpha: 0.2),
             spreadRadius: 2,
             blurRadius: 5,
-            offset: Offset(0, 3),
+            offset: const Offset(0, 3),
           ),
         ],
       ),
@@ -108,7 +149,7 @@ class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
                     ? _position.inMilliseconds / _duration.inMilliseconds
                     : 0,
             backgroundColor: Colors.grey[700],
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
           ),
           const SizedBox(height: 10),
           Row(
@@ -116,7 +157,7 @@ class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
             children: [
               IconButton(
                 icon: AnimatedSwitcher(
-                  duration: Duration(milliseconds: 300),
+                  duration: const Duration(milliseconds: 300),
                   transitionBuilder: (
                     Widget child,
                     Animation<double> animation,
@@ -132,6 +173,10 @@ class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
                 ),
                 onPressed: playPauseAudio,
               ),
+              IconButton(
+                icon: Icon(Icons.subtitles, color: Colors.white, size: 28),
+                onPressed: transcribeSpeechToText,
+              ),
               Text(
                 _formatDuration(_position.inSeconds),
                 style: TextStyle(color: Colors.grey[300], fontSize: 12),
@@ -142,6 +187,12 @@ class _AudioMessagePlayerState extends State<AudioMessagePlayer> {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          if (_transcript.isNotEmpty)
+            Text(
+              _transcript,
+              style: TextStyle(color: Colors.white, fontSize: 14),
+            ),
         ],
       ),
     );

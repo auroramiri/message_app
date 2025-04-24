@@ -2,6 +2,7 @@
 *.class
 *.log
 *.pyc
+.env
 *.swp
 .DS_Store
 .firebaserc
@@ -47,3 +48,4 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 /android/app/google_services.json
+lib/feature/chat/widgets/config.dart

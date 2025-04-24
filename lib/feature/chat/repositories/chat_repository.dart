@@ -105,180 +105,189 @@ class ChatRepository {
     }
   }
 
-Future<void> deleteMessage({
-  String? receiverId,
-  required String messageId,
-  required BuildContext context,
-}) async {
-  try {
-    String actualReceiverId = receiverId ?? '';
-    log('Starting message deletion process.');
+  Future<void> deleteMessage({
+    String? receiverId,
+    required String messageId,
+    required BuildContext context,
+  }) async {
+    try {
+      String actualReceiverId = receiverId ?? '';
+      log('Starting message deletion process.');
 
-    if (actualReceiverId.isEmpty) {
-      log('Receiver ID is empty. Searching for message in all chats.');
-      final userChats = await firestore
+      if (actualReceiverId.isEmpty) {
+        log('Receiver ID is empty. Searching for message in all chats.');
+        final userChats =
+            await firestore
+                .collection('users')
+                .doc(auth.currentUser!.uid)
+                .collection('chats')
+                .get();
+
+        bool messageFound = false;
+
+        for (var chatDoc in userChats.docs) {
+          final chatId = chatDoc.id;
+          log('Checking chat ID: $chatId');
+          final messageDoc =
+              await firestore
+                  .collection('users')
+                  .doc(auth.currentUser!.uid)
+                  .collection('chats')
+                  .doc(chatId)
+                  .collection('messages')
+                  .doc(messageId)
+                  .get();
+
+          if (messageDoc.exists) {
+            actualReceiverId = chatId;
+            messageFound = true;
+            log('Message found in chat ID: $chatId');
+            break;
+          }
+        }
+
+        if (!messageFound) {
+          throw Exception('Message not found');
+        }
+      }
+
+      // Get the message document to retrieve the file URL
+      final messageDoc =
+          await firestore
+              .collection('users')
+              .doc(auth.currentUser!.uid)
+              .collection('chats')
+              .doc(actualReceiverId)
+              .collection('messages')
+              .doc(messageId)
+              .get();
+
+      if (messageDoc.exists) {
+        final messageData = messageDoc.data();
+        if (messageData != null) {
+          final fileUrl = messageData['fileUrl'] as String?;
+
+          if (fileUrl != null) {
+            // Delete the file from Firebase Storage
+            final storageReference = firebase_storage.FirebaseStorage.instance
+                .refFromURL(fileUrl);
+            await storageReference.delete();
+            log('File deleted from Firebase Storage.');
+          }
+        }
+      }
+
+      log('Deleting message from sender\'s chat.');
+      await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
           .collection('chats')
-          .get();
+          .doc(actualReceiverId)
+          .collection('messages')
+          .doc(messageId)
+          .delete();
 
-      bool messageFound = false;
-
-      for (var chatDoc in userChats.docs) {
-        final chatId = chatDoc.id;
-        log('Checking chat ID: $chatId');
-        final messageDoc = await firestore
-            .collection('users')
-            .doc(auth.currentUser!.uid)
-            .collection('chats')
-            .doc(chatId)
-            .collection('messages')
-            .doc(messageId)
-            .get();
-
-        if (messageDoc.exists) {
-          actualReceiverId = chatId;
-          messageFound = true;
-          log('Message found in chat ID: $chatId');
-          break;
-        }
-      }
-
-      if (!messageFound) {
-        throw Exception('Message not found');
-      }
-    }
-
-    // Get the message document to retrieve the file URL
-    final messageDoc = await firestore
-        .collection('users')
-        .doc(auth.currentUser!.uid)
-        .collection('chats')
-        .doc(actualReceiverId)
-        .collection('messages')
-        .doc(messageId)
-        .get();
-
-    if (messageDoc.exists) {
-      final messageData = messageDoc.data();
-      if (messageData != null) {
-        final fileUrl = messageData['fileUrl'] as String?;
-
-        if (fileUrl != null) {
-          // Delete the file from Firebase Storage
-          final storageReference = firebase_storage.FirebaseStorage.instance.refFromURL(fileUrl);
-          await storageReference.delete();
-          log('File deleted from Firebase Storage.');
-        }
-      }
-    }
-
-    log('Deleting message from sender\'s chat.');
-    await firestore
-        .collection('users')
-        .doc(auth.currentUser!.uid)
-        .collection('chats')
-        .doc(actualReceiverId)
-        .collection('messages')
-        .doc(messageId)
-        .delete();
-
-    log('Deleting message from receiver\'s chat.');
-    await firestore
-        .collection('users')
-        .doc(actualReceiverId)
-        .collection('chats')
-        .doc(auth.currentUser!.uid)
-        .collection('messages')
-        .doc(messageId)
-        .delete();
-
-    log('Fetching remaining messages.');
-    final messages = await firestore
-        .collection('users')
-        .doc(auth.currentUser!.uid)
-        .collection('chats')
-        .doc(actualReceiverId)
-        .collection('messages')
-        .orderBy('timeSent', descending: true)
-        .limit(1)
-        .get();
-
-    if (messages.docs.isNotEmpty) {
-      final lastMessage = MessageModel.fromMap(messages.docs.first.data());
-
-      log('Fetching sender and receiver data.');
-      final currentUserData = await firestore
+      log('Deleting message from receiver\'s chat.');
+      await firestore
           .collection('users')
+          .doc(actualReceiverId)
+          .collection('chats')
           .doc(auth.currentUser!.uid)
-          .get();
+          .collection('messages')
+          .doc(messageId)
+          .delete();
 
-      final receiverData = await firestore.collection('users').doc(actualReceiverId).get();
+      log('Fetching remaining messages.');
+      final messages =
+          await firestore
+              .collection('users')
+              .doc(auth.currentUser!.uid)
+              .collection('chats')
+              .doc(actualReceiverId)
+              .collection('messages')
+              .orderBy('timeSent', descending: true)
+              .limit(1)
+              .get();
 
-      if (currentUserData.exists && receiverData.exists) {
-        final senderData = UserModel.fromMap(currentUserData.data()!);
-        final receiverUserData = UserModel.fromMap(receiverData.data()!);
+      if (messages.docs.isNotEmpty) {
+        final lastMessage = MessageModel.fromMap(messages.docs.first.data());
 
-        String lastMessageText;
-        switch (lastMessage.type) {
-          case MessageType.text:
-            lastMessageText = lastMessage.textMessage;
-            break;
-          case MessageType.image:
-            lastMessageText = '📸 Photo message';
-            break;
-          case MessageType.audio:
-            lastMessageText = '🎵 Voice message';
-            break;
-          case MessageType.video:
-            lastMessageText = '🎬 Video message';
-            break;
-          case MessageType.file:
-            lastMessageText = '📄 File message';
-            break;
-          case MessageType.gif:
-            lastMessageText = '🎭 GIF message';
-            break;
+        log('Fetching sender and receiver data.');
+        final currentUserData =
+            await firestore
+                .collection('users')
+                .doc(auth.currentUser!.uid)
+                .get();
+
+        final receiverData =
+            await firestore.collection('users').doc(actualReceiverId).get();
+
+        if (currentUserData.exists && receiverData.exists) {
+          final senderData = UserModel.fromMap(currentUserData.data()!);
+          final receiverUserData = UserModel.fromMap(receiverData.data()!);
+
+          String lastMessageText;
+          switch (lastMessage.type) {
+            case MessageType.text:
+              lastMessageText = lastMessage.textMessage;
+              break;
+            case MessageType.image:
+              lastMessageText = '📸 Photo message';
+              break;
+            case MessageType.audio:
+              lastMessageText = '🎵 Voice message';
+              break;
+            case MessageType.video:
+              lastMessageText = '🎬 Video message';
+              break;
+            case MessageType.file:
+              lastMessageText = '📄 File message';
+              break;
+            case MessageType.gif:
+              lastMessageText = '🎭 GIF message';
+              break;
+          }
+
+          log('Saving last message.');
+          saveAsLastMessage(
+            senderUserData: senderData,
+            receiverUserData: receiverUserData,
+            lastMessage: lastMessageText,
+            timeSent: lastMessage.timeSent,
+            receiverId: actualReceiverId,
+          );
         }
+      } else {
+        log('No messages left. Saving "No messages" as last message.');
+        final currentUserData =
+            await firestore
+                .collection('users')
+                .doc(auth.currentUser!.uid)
+                .get();
 
-        log('Saving last message.');
-        saveAsLastMessage(
-          senderUserData: senderData,
-          receiverUserData: receiverUserData,
-          lastMessage: lastMessageText,
-          timeSent: lastMessage.timeSent,
-          receiverId: actualReceiverId,
-        );
+        final receiverData =
+            await firestore.collection('users').doc(actualReceiverId).get();
+
+        if (currentUserData.exists && receiverData.exists) {
+          final senderData = UserModel.fromMap(currentUserData.data()!);
+          final receiverUserData = UserModel.fromMap(receiverData.data()!);
+
+          saveAsLastMessage(
+            senderUserData: senderData,
+            receiverUserData: receiverUserData,
+            lastMessage: "No messages",
+            timeSent: DateTime.now(),
+            receiverId: actualReceiverId,
+          );
+        }
       }
-    } else {
-      log('No messages left. Saving "No messages" as last message.');
-      final currentUserData = await firestore
-          .collection('users')
-          .doc(auth.currentUser!.uid)
-          .get();
-
-      final receiverData = await firestore.collection('users').doc(actualReceiverId).get();
-
-      if (currentUserData.exists && receiverData.exists) {
-        final senderData = UserModel.fromMap(currentUserData.data()!);
-        final receiverUserData = UserModel.fromMap(receiverData.data()!);
-
-        saveAsLastMessage(
-          senderUserData: senderData,
-          receiverUserData: receiverUserData,
-          lastMessage: "No messages",
-          timeSent: DateTime.now(),
-          receiverId: actualReceiverId,
-        );
+    } catch (e) {
+      log('Error deleting message: $e');
+      if (context.mounted) {
+        showAllertDialog(context: context, message: e.toString());
       }
-    }
-  } catch (e) {
-    log('Error deleting message: $e');
-    if (context.mounted) {
-      showAllertDialog(context: context, message: e.toString());
     }
   }
-}
 
   Future<void> setChatBackgroundImage({
     required var imageFile,

@@ -49,26 +49,27 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
     try {
       if (isRecording) {
         final path = await recorder.stop();
-        debugPrint('Recorded audio path: $path');
         if (path != null) {
           final audioFile = File(path);
-          sendFileMessage(audioFile, MessageType.audio);
+          final audioFileName = path.split('/').last;
+          sendFileMessage(
+            audioFile,
+            MessageType.audio,
+            fileName: audioFileName,
+          );
         }
       } else {
         if (await recorder.hasPermission()) {
           final directory = await getApplicationDocumentsDirectory();
           final path =
-              '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+              '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.mp3';
           await recorder.start(const RecordConfig(), path: path);
-        } else {
-          debugPrint('No audio recording permissions.');
-        }
+        } else {}
       }
       setState(() {
         isRecording = !isRecording;
       });
     } catch (e) {
-      debugPrint('Error recording audio: $e');
       if (mounted) {
         showAllertDialog(
           context: context,
@@ -92,7 +93,6 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
 
   void sendVideoMessageFromGallery() async {
     try {
-      debugPrint('Starting video selection from gallery');
       final picker = ImagePicker();
       final pickedVideo = await picker.pickVideo(
         source: ImageSource.gallery,
@@ -100,13 +100,10 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
       );
 
       if (pickedVideo != null) {
-        debugPrint('Video selected: ${pickedVideo.path}');
         final videoFile = File(pickedVideo.path);
 
         final fileSize = await videoFile.length();
         final maxSize = 50 * 1024 * 1024;
-
-        debugPrint('Video file size: ${fileSize / 1024 / 1024}MB');
 
         if (fileSize > maxSize) {
           if (mounted) {
@@ -121,11 +118,8 @@ class _ChatTextFieldState extends ConsumerState<ChatTextField> {
 
         sendFileMessage(videoFile, MessageType.video);
         setState(() => cardHeight = 0);
-      } else {
-        debugPrint('No video selected');
-      }
+      } else {}
     } catch (e) {
-      debugPrint('Error selecting video: $e');
       if (!mounted) return;
       showAllertDialog(context: context, message: 'Error selecting video: $e');
     }
