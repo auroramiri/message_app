@@ -129,10 +129,14 @@ class AuthRepository {
           arguments: user?.profileImageUrl,
         );
       }
-    } on FirebaseAuthException catch (e) {
+    } on FirebaseAuthException {
       if (context.mounted) {
         Navigator.pop(context);
-        showAllertDialog(context: context, message: e.toString());
+        showAllertDialog(
+          context: context,
+          message:
+              'Verification code is invalid. \nCheck and enter the \ncorrect verification code',
+        );
       }
     }
   }
@@ -175,5 +179,19 @@ class AuthRepository {
     }
   }
 
+  Future<void> deleteUser() async {
+    try {
+      await firestore.collection('users').doc(auth.currentUser?.uid).delete();
 
+      await realtime
+          .ref()
+          .child('users')
+          .child(auth.currentUser?.uid ?? '')
+          .remove();
+
+      await auth.currentUser?.delete();
+    } catch (e) {
+      throw Exception('Failed to delete user: $e');
+    }
+  }
 }

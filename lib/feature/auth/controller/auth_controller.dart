@@ -105,7 +105,6 @@ class AuthController {
       mounted: mounted,
     );
     
-    // Save FCM token after user info is saved
     await tokenService.saveToken();
   }
 
@@ -129,13 +128,4 @@ class AuthController {
   }) {
     authRepository.sendSmsCode(context: context, phoneNumber: phoneNumber);
   }
-  
-  // // Add a sign out method that removes the FCM token
-  // Future<void> signOut(BuildContext context) async {
-  //   // Remove FCM token before signing out
-  //   await tokenService.removeToken();
-    
-  //   // Then sign out the user
-  //   await authRepository.signOut(context);
-  // }
 }

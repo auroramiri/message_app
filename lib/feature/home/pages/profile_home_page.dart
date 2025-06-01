@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/helper/show_alert_dialog.dart';
 import 'package:message_app/common/models/user_model.dart';
+import 'package:message_app/common/routes/routes.dart';
 import 'package:message_app/common/utils/coloors.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/common/widgets/short_h_bar.dart';
@@ -17,6 +18,7 @@ import 'package:message_app/feature/auth/pages/image_picker_page.dart';
 import 'package:message_app/feature/auth/repository/auth_repository.dart';
 import 'package:message_app/feature/auth/widgets/custom_text_field.dart';
 import 'package:message_app/feature/chat/widgets/custom_list_tile.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProfilePage extends ConsumerStatefulWidget {
   const UserProfilePage({super.key});
@@ -97,6 +99,26 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     setState(() {
       isEditing = false;
     });
+  }
+
+  Future<void> deleteUserAccount() async {
+    try {
+      // Удаление пользователя из Firebase
+      await _authRepository.deleteUser();
+
+      // Очистка локальных данных
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      // Переход на стартовый экран
+      if (mounted) {
+        Navigator.pushNamed(context, Routes.welcome);
+      }
+    } catch (e) {
+      if (mounted) {
+        showAllertDialog(context: context, message: e.toString());
+      }
+    }
   }
 
   Future<void> imagePickerTypeBottomSheet() async {
@@ -310,6 +332,34 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                 'Delete account:  ${currentUser?.username ?? 'Loading'}',
                 style: const TextStyle(color: Color(0xFFF15C6D)),
               ),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Delete Account'),
+                      content: Text(
+                        'Are you sure you want to delete your account?',
+                      ),
+                      actions: <Widget>[
+                        TextButton(
+                          child: Text('Cancel'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        TextButton(
+                          child: Text('Delete'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            deleteUserAccount();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
             ),
           ],
         ),

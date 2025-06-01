@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:http/http.dart';
 import 'package:message_app/feature/chat/widgets/build_image_action_button.dart';
@@ -192,11 +191,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                             onTap: _saveImage,
                           ),
                           buildActionButton(
-                            icon: Icons.content_copy,
-                            label: 'Copy URL',
-                            onTap: () => _copyImageUrl(context),
-                          ),
-                          buildActionButton(
                             icon: Icons.info_outline,
                             label: 'Info',
                             onTap: () => _showImageInfo(context),
@@ -290,19 +284,6 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
           ),
         );
       }
-    }
-  }
-
-  void _copyImageUrl(BuildContext context) {
-    Clipboard.setData(ClipboardData(text: widget.imageUrl));
-
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Image URL copied to clipboard'),
-          duration: Duration(seconds: 2),
-        ),
-      );
     }
   }
 

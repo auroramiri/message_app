@@ -13,7 +13,7 @@ class ContactsRepository {
 
   ContactsRepository({required this.firestore});
 
-  Future<List<List>> getAllContacts() async {
+  Future<List<List<UserModel>>> getAllContacts() async {
     List<UserModel> firebaseContacts = [];
     List<UserModel> phoneContacts = [];
 
@@ -28,14 +28,15 @@ class ContactsRepository {
         for (var contact in allContactsInThePhone) {
           for (var firebaseContactData in userCollection.docs) {
             var firebaseContact = UserModel.fromMap(firebaseContactData.data());
-            if (contact.phones[0].number.replaceAll(' ', '') ==
-                firebaseContact.phoneNumber) {
+            if (contact.phones.isNotEmpty &&
+                contact.phones[0].number.replaceAll(' ', '') ==
+                    firebaseContact.phoneNumber) {
               firebaseContacts.add(firebaseContact);
               isContactFound = true;
               break;
             }
           }
-          if (!isContactFound) {
+          if (!isContactFound && contact.phones.isNotEmpty) {
             phoneContacts.add(
               UserModel(
                 username: contact.displayName,
@@ -56,5 +57,46 @@ class ContactsRepository {
     }
 
     return [firebaseContacts, phoneContacts];
+  }
+
+  Future<List<UserModel>> searchContacts(String query) async {
+    final firebaseContactsByName =
+        await firestore
+            .collection('users')
+            .where('username', isGreaterThanOrEqualTo: query)
+            .where('username', isLessThan: '${query}z')
+            .get();
+
+    final firebaseContactsByPhone =
+        await firestore
+            .collection('users')
+            .where('phoneNumber', isGreaterThanOrEqualTo: query)
+            .where('phoneNumber', isLessThan: '${query}z')
+            .get();
+
+    final phoneContacts = await getAllContacts();
+    final filteredPhoneContacts =
+        phoneContacts[1].where((contact) {
+          final name = contact.username.toLowerCase();
+          final phoneNumber = contact.phoneNumber.toLowerCase();
+          return name.contains(query.toLowerCase()) ||
+              phoneNumber.contains(query.toLowerCase());
+        }).toList();
+
+    final firebaseContactListByName =
+        firebaseContactsByName.docs
+            .map((doc) => UserModel.fromMap(doc.data()))
+            .toList();
+    final firebaseContactListByPhone =
+        firebaseContactsByPhone.docs
+            .map((doc) => UserModel.fromMap(doc.data()))
+            .toList();
+
+    final combinedFirebaseContacts = [
+      ...firebaseContactListByName,
+      ...firebaseContactListByPhone,
+    ];
+
+    return [...combinedFirebaseContacts, ...filteredPhoneContacts];
   }
 }

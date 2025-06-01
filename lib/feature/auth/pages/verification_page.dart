@@ -51,7 +51,7 @@ class VerificationPage extends ConsumerWidget {
                   children: [
                     TextSpan(
                       text:
-                          "You've tried to register +7894123116. before requesting an SMS or call with your code. ",
+                          "You've tried to register +$phoneNumber. before requesting an SMS or call with your code. ",
                     ),
                     TextSpan(
                       text: 'Wrong number?',

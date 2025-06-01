@@ -40,7 +40,7 @@ class WelcomePage extends StatelessWidget {
             child: Column(
               children: [
                 const Text(
-                  'Welcome to БундъВарка',
+                  'Добро пожаловать в БундъВарку',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const PrivacyAndTerms(),
