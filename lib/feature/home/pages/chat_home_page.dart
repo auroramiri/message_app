@@ -41,6 +41,8 @@ class ChatHomePage extends ConsumerWidget {
                       lastSeen: 0,
                       phoneNumber: '0',
                       groupId: [],
+                      isAdmin: false,
+                      fcmToken: '',
                     ),
                   );
                 },

@@ -81,6 +81,23 @@ class AuthRepository {
       showLoadingDialog(context: context, message: 'Saving user info...');
       String uid = auth.currentUser!.uid;
       String profileImageUrl = profileImage is String ? profileImage : '';
+
+      // Получаем текущую информацию о пользователе
+      DocumentSnapshot userDoc =
+          await firestore.collection('users').doc(uid).get();
+
+      bool isAdmin = false;
+      String fcmToken = '';
+
+      // Проверяем, существует ли пользователь, и получаем текущие значения isAdmin и fcmToken
+      if (userDoc.exists) {
+        UserModel currentUser = UserModel.fromMap(
+          userDoc.data() as Map<String, dynamic>,
+        );
+        isAdmin = currentUser.isAdmin;
+        fcmToken = currentUser.fcmToken;
+      }
+
       if (profileImage != null && profileImage is! String) {
         profileImageUrl = await ref
             .read(firebaseStorageRepositoryProvider)
@@ -95,15 +112,25 @@ class AuthRepository {
         active: true,
         phoneNumber: auth.currentUser!.phoneNumber!,
         groupId: [],
+        isAdmin: isAdmin,
+        fcmToken: fcmToken, // Используем текущий FCM токен
       );
 
       await firestore.collection('users').doc(uid).set(user.toMap());
 
-      if (!context.mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, Routes.home, (route) => false);
+      if (!mounted) return;
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          Routes.home,
+          (route) => false,
+        );
+      }
     } catch (e) {
-      Navigator.pop(context);
-      showAllertDialog(context: context, message: e.toString());
+      if (context.mounted) {
+        Navigator.pop(context);
+        showAllertDialog(context: context, message: e.toString());
+      }
     }
   }
 

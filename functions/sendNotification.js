@@ -40,14 +40,12 @@ export const sendNotification = onDocumentCreated('users/{receiverId}/chats/{sen
     }
 
     const userData = userDoc.data();
-    const tokens = userData.fcmTokens;
+    const token = userData.fcmToken;
 
-    if (!tokens || tokens.length === 0) {
+    if (!token) {
         console.log('FCM токен для пользователя не найден:', messageReceiver);
         return null;
     }
-
-    const token = tokens[0]; // Выбираем первый FCM токен из массива
 
     const message = {
         notification: {

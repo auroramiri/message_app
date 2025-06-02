@@ -70,6 +70,10 @@ dependencies:
   video_thumbnail: ^0.5.3
   record: ^6.0.0
   just_audio: ^0.10.0
+  cryptography: ^2.7.0
+  cryptography_flutter: ^2.3.2
+  flutter_secure_storage: ^9.2.4
+  basic_utils: ^5.8.2
 
 flutter_native_splash:
   color: "#FFFFFF"

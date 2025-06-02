@@ -46,6 +46,8 @@ class ContactsRepository {
                 lastSeen: 0,
                 phoneNumber: contact.phones[0].number.replaceAll(' ', ''),
                 groupId: [],
+                isAdmin: false,
+                fcmToken: '',
               ),
             );
           }

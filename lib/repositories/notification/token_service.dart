@@ -1,6 +1,4 @@
-// lib/repositories/notification/token_service.dart
 import 'dart:developer';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -19,31 +17,15 @@ class TokenService {
       final token = await _messaging.getToken();
       if (token == null) return;
 
-      // Обновление документа пользователя с FCM токеном
-      await _firestore.collection('users').doc(user.uid).update({
-        'fcmTokens': FieldValue.arrayUnion([token]),
+      // Обновление документа пользователя с одним FCM токеном
+      await _firestore.collection('users').doc(user.uid).set({
+        'fcmToken': token,
         'lastTokenUpdate': FieldValue.serverTimestamp(),
-      });
+      }, SetOptions(merge: true));
+
+      log('FCM токен успешно сохранен для пользователя: ${user.uid}');
     } catch (e) {
       log('Ошибка при сохранении FCM токена: $e');
-
-      // Если документ еще не существует, создаем его
-      if (e is FirebaseException && e.code == 'not-found') {
-        try {
-          final user = _auth.currentUser;
-          if (user == null) return;
-
-          final token = await _messaging.getToken();
-          if (token == null) return;
-
-          await _firestore.collection('users').doc(user.uid).set({
-            'fcmTokens': [token],
-            'lastTokenUpdate': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        } catch (e) {
-          log('Ошибка при создании документа FCM токена: $e');
-        }
-      }
     }
   }
 
@@ -53,11 +35,9 @@ class TokenService {
       final user = _auth.currentUser;
       if (user == null) return;
 
-      final token = await _messaging.getToken();
-      if (token == null) return;
-
+      // Удаляем токен, устанавливая его в пустую строку или null
       await _firestore.collection('users').doc(user.uid).update({
-        'fcmTokens': FieldValue.arrayRemove([token]),
+        'fcmToken': FieldValue.delete(),
       });
 
       log('FCM токен удален для пользователя: ${user.uid}');

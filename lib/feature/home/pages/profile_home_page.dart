@@ -55,6 +55,40 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     super.initState();
   }
 
+  Future<void> signOut() async {
+    try {
+      await _authRepository.auth.signOut();
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          Routes.welcome,
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder:
+              (context) => AlertDialog(
+                title: const Text('Error'),
+                content: Text('Failed to sign out: $e'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+        );
+      }
+    }
+  }
+
   Future<void> _fetchCurrentUser() async {
     final user = await _authRepository.getCurrentUserInfo();
     if (mounted) {
@@ -103,14 +137,11 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
 
   Future<void> deleteUserAccount() async {
     try {
-      // Удаление пользователя из Firebase
       await _authRepository.deleteUser();
 
-      // Очистка локальных данных
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
-      // Переход на стартовый экран
       if (mounted) {
         Navigator.pushNamed(context, Routes.welcome);
       }
@@ -309,7 +340,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                   iconColor: context.theme.blueColor,
                   onPressed: toggleEditing,
                 ),
-                SizedBox(width: 20),
+                SizedBox(width: 10),
               ],
             ),
             const CustomListTile(
@@ -318,13 +349,13 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                   'Messages and calls are end-to-end encrypted, Tap to verify.',
               leading: Icons.lock,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             CustomListTile(
               title: 'Save changes',
               leading: Icons.save,
               onTap: saveUserDataToFirebase,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             ListTile(
               contentPadding: const EdgeInsets.only(left: 25, right: 10),
               leading: const Icon(Icons.block, color: Color(0xFFF15C6D)),
@@ -353,6 +384,41 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                           onPressed: () {
                             Navigator.of(context).pop();
                             deleteUserAccount();
+                          },
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              contentPadding: const EdgeInsets.only(left: 25, right: 10),
+              leading: const Icon(Icons.exit_to_app, color: Colors.blue),
+              title: const Text(
+                'Sign Out',
+                style: TextStyle(color: Colors.blue),
+              ),
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: const Text('Sign Out'),
+                      content: const Text('Are you sure you want to sign out?'),
+                      actions: <Widget>[
+                        TextButton(
+                          child: const Text('Cancel'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        TextButton(
+                          child: const Text('Sign Out'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            signOut();
                           },
                         ),
                       ],

@@ -36,18 +36,22 @@ class _ContactPageState extends ConsumerState<ContactPage> {
   }
 
   void _onSearchChanged() {
-    setState(() {
-      _searchQuery = _searchController.text;
-    });
-    if (_searchQuery.isNotEmpty) {
-      ref
-          .read(contactControllerProvider.notifier)
-          .searchContacts(_searchQuery)
-          .then((contacts) {
-            setState(() {
-              _filteredContacts = contacts;
+    if (_searchQuery != _searchController.text) {
+      setState(() {
+        _searchQuery = _searchController.text;
+      });
+      if (_searchQuery.isNotEmpty) {
+        ref
+            .read(contactControllerProvider.notifier)
+            .searchContacts(_searchQuery)
+            .then((contacts) {
+              if (mounted) {
+                setState(() {
+                  _filteredContacts = contacts;
+                });
+              }
             });
-          });
+      }
     }
   }
 
@@ -62,10 +66,17 @@ class _ContactPageState extends ConsumerState<ContactPage> {
     });
   }
 
-  shareSmsLink(phoneNumber) async {
+  Future<void> shareSmsLink(String phoneNumber) async {
     Uri sms = Uri.parse("sms:$phoneNumber?body=Let's chat on Бундъварка!");
-    if (await launchUrl(sms)) {
-    } else {}
+    if (await canLaunchUrl(sms)) {
+      await launchUrl(sms);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Could not launch SMS')));
+      }
+    }
   }
 
   @override
@@ -162,13 +173,8 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                                     leading: Icons.group,
                                     text: 'New group',
                                   ),
-                                  myListTile(
-                                    leading: Icons.contacts,
-                                    text: 'New contact',
-                                    trailing: Icons.qr_code,
-                                  ),
                                   Padding(
-                                    padding: EdgeInsets.symmetric(
+                                    padding: const EdgeInsets.symmetric(
                                       horizontal: 20,
                                       vertical: 10,
                                     ),
@@ -195,7 +201,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                           } else {
                             if (index == firebaseContacts.length) {
                               return Padding(
-                                padding: EdgeInsets.symmetric(
+                                padding: const EdgeInsets.symmetric(
                                   horizontal: 20,
                                   vertical: 10,
                                 ),
@@ -224,14 +230,10 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                       );
                     },
                     error: (e, t) {
-                      return null;
+                      return Center(child: Text('Error: $e'));
                     },
                     loading: () {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          color: context.theme.authAppbarTextColor,
-                        ),
-                      );
+                      return const Center(child: CircularProgressIndicator());
                     },
                   ),
     );
@@ -253,7 +255,8 @@ class _ContactPageState extends ConsumerState<ContactPage> {
         text,
         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
       ),
-      trailing: Icon(trailing, color: Coloors.greyDark),
+      trailing:
+          trailing != null ? Icon(trailing, color: Coloors.greyDark) : null,
     );
   }
 }
