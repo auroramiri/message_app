@@ -1,10 +1,12 @@
-import 'dart:developer';
+import 'dart:convert';
+import 'dart:developer' as developer;
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/enum/message_type.dart';
 import 'package:message_app/common/helper/show_alert_dialog.dart';
@@ -12,19 +14,69 @@ import 'package:message_app/common/models/last_message_model.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:message_app/common/repository/firebase_storage_repository.dart';
+import 'package:message_app/common/services/encryption/key_generation_service.dart';
+import 'package:pointycastle/api.dart';
+import 'package:pointycastle/asymmetric/api.dart';
+import 'package:pointycastle/asymmetric/oaep.dart';
+import 'package:pointycastle/asymmetric/rsa.dart';
+import 'package:uuid/uuid.dart';
 
 final chatRepositoryProvider = Provider((ref) {
+  final storage = FlutterSecureStorage();
+  final keyGenerationService = KeyGenerationService(secureStorage: storage);
   return ChatRepository(
+    secureStorage: storage,
     firestore: FirebaseFirestore.instance,
     auth: FirebaseAuth.instance,
+    keyGenerationService: keyGenerationService,
   );
 });
 
 class ChatRepository {
+  final FlutterSecureStorage secureStorage;
   final FirebaseFirestore firestore;
   final FirebaseAuth auth;
+  final KeyGenerationService keyGenerationService;
 
-  ChatRepository({required this.firestore, required this.auth});
+  ChatRepository({
+    required this.secureStorage,
+    required this.firestore,
+    required this.auth,
+    required this.keyGenerationService,
+  });
+
+  Future<String> decryptMessage(String encryptedMessage) async {
+    developer.log('Starting decryption process for message.');
+    try {
+      final decryptedMessage = await keyGenerationService.decryptMessage(
+        encryptedMessage,
+      );
+
+      developer.log('Message decrypted successfully.: $decryptedMessage');
+      return decryptedMessage;
+    } catch (e) {
+      developer.log('Error during decryption: $e');
+      throw Exception('Failed to decrypt message: $e');
+    }
+  }
+
+  Future<String?> getReceiverPublicKey(String userId) async {
+    final userDoc = await firestore.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+      return userDoc.data()!['rsaPublicKey'] as String?;
+    }
+    return null;
+  }
+
+  Future<String> encryptMessage(String message, String publicKeyPEM) async {
+    final publicKey = keyGenerationService.decodePublicKeyFromPEM(publicKeyPEM);
+    final encryptor = OAEPEncoding(RSAEngine())
+      ..init(true, PublicKeyParameter<RSAPublicKey>(publicKey));
+
+    final messageBytes = Uint8List.fromList(utf8.encode(message));
+    final encrypted = encryptor.process(messageBytes);
+    return base64.encode(encrypted);
+  }
 
   Future<void> deleteChat({
     required String receiverId,
@@ -75,7 +127,6 @@ class ChatRepository {
 
       final currentUserData =
           await firestore.collection('users').doc(auth.currentUser!.uid).get();
-
       final receiverData =
           await firestore.collection('users').doc(receiverId).get();
 
@@ -112,10 +163,12 @@ class ChatRepository {
   }) async {
     try {
       String actualReceiverId = receiverId ?? '';
-      log('Starting message deletion process.');
+      developer.log('Starting message deletion process.');
 
       if (actualReceiverId.isEmpty) {
-        log('Receiver ID is empty. Searching for message in all chats.');
+        developer.log(
+          'Receiver ID is empty. Searching for message in all chats.',
+        );
         final userChats =
             await firestore
                 .collection('users')
@@ -127,7 +180,7 @@ class ChatRepository {
 
         for (var chatDoc in userChats.docs) {
           final chatId = chatDoc.id;
-          log('Checking chat ID: $chatId');
+          developer.log('Checking chat ID: $chatId');
           final messageDoc =
               await firestore
                   .collection('users')
@@ -141,7 +194,7 @@ class ChatRepository {
           if (messageDoc.exists) {
             actualReceiverId = chatId;
             messageFound = true;
-            log('Message found in chat ID: $chatId');
+            developer.log('Message found in chat ID: $chatId');
             break;
           }
         }
@@ -151,7 +204,6 @@ class ChatRepository {
         }
       }
 
-      // Get the message document to retrieve the file URL
       final messageDoc =
           await firestore
               .collection('users')
@@ -168,16 +220,15 @@ class ChatRepository {
           final fileUrl = messageData['fileUrl'] as String?;
 
           if (fileUrl != null) {
-            // Delete the file from Firebase Storage
             final storageReference = firebase_storage.FirebaseStorage.instance
                 .refFromURL(fileUrl);
             await storageReference.delete();
-            log('File deleted from Firebase Storage.');
+            developer.log('File deleted from Firebase Storage.');
           }
         }
       }
 
-      log('Deleting message from sender\'s chat.');
+      developer.log('Deleting message from sender\'s chat.');
       await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
@@ -187,7 +238,7 @@ class ChatRepository {
           .doc(messageId)
           .delete();
 
-      log('Deleting message from receiver\'s chat.');
+      developer.log('Deleting message from receiver\'s chat.');
       await firestore
           .collection('users')
           .doc(actualReceiverId)
@@ -197,7 +248,7 @@ class ChatRepository {
           .doc(messageId)
           .delete();
 
-      log('Fetching remaining messages.');
+      developer.log('Fetching remaining messages.');
       final messages =
           await firestore
               .collection('users')
@@ -212,7 +263,7 @@ class ChatRepository {
       if (messages.docs.isNotEmpty) {
         final lastMessage = MessageModel.fromMap(messages.docs.first.data());
 
-        log('Fetching sender and receiver data.');
+        developer.log('Fetching sender and receiver data.');
         final currentUserData =
             await firestore
                 .collection('users')
@@ -248,8 +299,8 @@ class ChatRepository {
               break;
           }
 
-          log('Saving last message.');
-          saveAsLastMessage(
+          developer.log('Saving last message.');
+          await saveAsLastMessage(
             senderUserData: senderData,
             receiverUserData: receiverUserData,
             lastMessage: lastMessageText,
@@ -258,7 +309,9 @@ class ChatRepository {
           );
         }
       } else {
-        log('No messages left. Saving "No messages" as last message.');
+        developer.log(
+          'No messages left. Saving "No messages" as last message.',
+        );
         final currentUserData =
             await firestore
                 .collection('users')
@@ -272,7 +325,7 @@ class ChatRepository {
           final senderData = UserModel.fromMap(currentUserData.data()!);
           final receiverUserData = UserModel.fromMap(receiverData.data()!);
 
-          saveAsLastMessage(
+          await saveAsLastMessage(
             senderUserData: senderData,
             receiverUserData: receiverUserData,
             lastMessage: "No messages",
@@ -282,7 +335,7 @@ class ChatRepository {
         }
       }
     } catch (e) {
-      log('Error deleting message: $e');
+      developer.log('Error deleting message: $e');
       if (context.mounted) {
         showAllertDialog(context: context, message: e.toString());
       }
@@ -312,7 +365,7 @@ class ChatRepository {
         }
         return;
       }
-      // Get existing chat documents
+
       final senderChatDoc =
           await firestore
               .collection('users')
@@ -329,16 +382,11 @@ class ChatRepository {
               .doc(auth.currentUser!.uid)
               .get();
 
-      // Update sender's chat document if it exists
       if (senderChatDoc.exists) {
-        // Get the existing document data
         Map<String, dynamic> senderData = Map<String, dynamic>.from(
           senderChatDoc.data()!,
         );
-        // Update the backgroundImageUrl field
         senderData['backgroundImageUrl'] = backgroundImageUrl;
-
-        // Set the entire document with the updated data
         await firestore
             .collection('users')
             .doc(auth.currentUser!.uid)
@@ -346,7 +394,6 @@ class ChatRepository {
             .doc(receiverId)
             .set(senderData);
       } else {
-        // Chat doesn't exist yet, show error
         if (context.mounted) {
           showAllertDialog(
             context: context,
@@ -356,16 +403,11 @@ class ChatRepository {
         return;
       }
 
-      // Update receiver's chat document if it exists
       if (receiverChatDoc.exists) {
-        // Get the existing document data
         Map<String, dynamic> receiverData = Map<String, dynamic>.from(
           receiverChatDoc.data()!,
         );
-        // Update the backgroundImageUrl field
         receiverData['backgroundImageUrl'] = backgroundImageUrl;
-
-        // Set the entire document with the updated data
         await firestore
             .collection('users')
             .doc(receiverId)
@@ -392,13 +434,13 @@ class ChatRepository {
     try {
       final timeSent = DateTime.now();
       final messageId = const Uuid().v1();
-      log(
+      developer.log(
         'Sending file message: file = ${messageType.type}, receiverId = $receiverId, messageType = $messageType, fileName = $fileName',
       );
 
       int? fileSize;
       if (file is File) {
-        fileSize = await file.length(); // Get file size
+        fileSize = await file.length();
       }
 
       final fileUrl = await ref
@@ -407,12 +449,12 @@ class ChatRepository {
             'chats/${messageType.type}/${senderData.uid}/$receiverId/$messageId',
             file,
           );
-      log('File URL: $fileUrl');
+
+      developer.log('File URL: $fileUrl');
       final userMap = await firestore.collection('users').doc(receiverId).get();
-      final receverUserData = UserModel.fromMap(userMap.data()!);
+      final receiverUserData = UserModel.fromMap(userMap.data()!);
 
       String lastMessage;
-
       switch (messageType) {
         case MessageType.image:
           lastMessage = '📸 Photo message';
@@ -427,36 +469,38 @@ class ChatRepository {
           lastMessage = '🎭 GIF message';
           break;
         case MessageType.file:
-          lastMessage = '📄 File: ${fileName ?? "File"}'; // Use the filename
+          lastMessage = '📄 File: ${fileName ?? "File"}';
           break;
         default:
           lastMessage = '📦 Unknown message';
           break;
       }
 
-      saveToMessageCollection(
+      await saveToMessageCollection(
         receiverId: receiverId,
         textMessage: fileName ?? 'File',
         timeSent: timeSent,
         textMessageId: messageId,
         senderUsername: senderData.username,
-        receiverUsername: receverUserData.username,
+        receiverUsername: receiverUserData.username,
         messageType: messageType,
         fileSize: fileSize,
         fileUrl: fileUrl,
       );
-      log('Message saved to message collection');
 
-      saveAsLastMessage(
+      developer.log('Message saved to message collection');
+
+      await saveAsLastMessage(
         senderUserData: senderData,
-        receiverUserData: receverUserData,
+        receiverUserData: receiverUserData,
         lastMessage: lastMessage,
         timeSent: timeSent,
         receiverId: receiverId,
       );
-      log('Last message saved');
+
+      developer.log('Last message saved');
     } catch (e) {
-      log(e.toString());
+      developer.log(e.toString());
       if (context.mounted) {
         showAllertDialog(context: context, message: e.toString());
       }
@@ -544,7 +588,7 @@ class ChatRepository {
       final receiverData = UserModel.fromMap(receiverDataMap.data()!);
       final textMessageId = const Uuid().v1();
 
-      saveToMessageCollection(
+      await saveToMessageCollection(
         receiverId: receiverId,
         textMessage: textMessage,
         timeSent: timeSent,
@@ -554,7 +598,7 @@ class ChatRepository {
         messageType: MessageType.text,
       );
 
-      saveAsLastMessage(
+      await saveAsLastMessage(
         senderUserData: senderData,
         receiverUserData: receiverData,
         lastMessage: textMessage,
@@ -568,7 +612,7 @@ class ChatRepository {
     }
   }
 
-  void saveToMessageCollection({
+  Future<void> saveToMessageCollection({
     required String receiverId,
     required String textMessage,
     required DateTime timeSent,
@@ -579,41 +623,91 @@ class ChatRepository {
     int? fileSize,
     String? fileUrl,
   }) async {
-    final message = MessageModel(
-      senderId: auth.currentUser!.uid,
-      receiverId: receiverId,
-      textMessage: textMessage,
-      type: messageType,
-      timeSent: timeSent,
-      messageId: textMessageId,
-      isSeen: false,
-      notificationSent: false,
-      fileSize: fileSize,
-      fileUrl: fileUrl,
-    );
+    try {
+      developer.log('Retrieving public keys...');
+      final senderPublicKeyPem = await getReceiverPublicKey(
+        auth.currentUser!.uid,
+      );
+      final receiverPublicKeyPem = await getReceiverPublicKey(receiverId);
 
-    // sender
-    await firestore
-        .collection('users')
-        .doc(auth.currentUser!.uid)
-        .collection('chats')
-        .doc(receiverId)
-        .collection('messages')
-        .doc(textMessageId)
-        .set(message.toMap());
+      if (senderPublicKeyPem == null || receiverPublicKeyPem == null) {
+        throw Exception('Public keys not found');
+      }
 
-    // receiver
-    await firestore
-        .collection('users')
-        .doc(receiverId)
-        .collection('chats')
-        .doc(auth.currentUser!.uid)
-        .collection('messages')
-        .doc(textMessageId)
-        .set(message.toMap());
+      developer.log('Public keys retrieved successfully.');
+
+      // Ensure the text message is not empty
+      if (textMessage.isEmpty) {
+        throw Exception('Text message is empty');
+      }
+
+      developer.log('Encrypting message for sender...');
+      developer.log('$textMessage PEMSender: $senderPublicKeyPem');
+      final encryptedMessageForSender = await keyGenerationService
+          .encryptMessage(textMessage, senderPublicKeyPem);
+      developer.log('Encrypted message for sender: $encryptedMessageForSender');
+
+      developer.log('Encrypting message for receiver...');
+      final encryptedMessageForReceiver = await keyGenerationService
+          .encryptMessage(textMessage, receiverPublicKeyPem);
+      developer.log(
+        'Encrypted message for receiver: $encryptedMessageForReceiver',
+      );
+
+      final messageForSender = MessageModel(
+        senderId: auth.currentUser!.uid,
+        receiverId: receiverId,
+        textMessage: encryptedMessageForSender,
+        type: messageType,
+        timeSent: timeSent,
+        messageId: textMessageId,
+        isSeen: false,
+        notificationSent: false,
+        fileSize: fileSize,
+        fileUrl: fileUrl,
+      );
+
+      final messageForReceiver = MessageModel(
+        senderId: auth.currentUser!.uid,
+        receiverId: receiverId,
+        textMessage: encryptedMessageForReceiver,
+        type: messageType,
+        timeSent: timeSent,
+        messageId: textMessageId,
+        isSeen: false,
+        notificationSent: false,
+        fileSize: fileSize,
+        fileUrl: fileUrl,
+      );
+
+      developer.log('Saving message for sender...');
+      await firestore
+          .collection('users')
+          .doc(auth.currentUser!.uid)
+          .collection('chats')
+          .doc(receiverId)
+          .collection('messages')
+          .doc(textMessageId)
+          .set(messageForSender.toMap());
+
+      developer.log('Saving message for receiver...');
+      await firestore
+          .collection('users')
+          .doc(receiverId)
+          .collection('chats')
+          .doc(auth.currentUser!.uid)
+          .collection('messages')
+          .doc(textMessageId)
+          .set(messageForReceiver.toMap());
+
+      developer.log('Messages saved successfully.');
+    } catch (e) {
+      developer.log('Error saving message: $e');
+      throw Exception('Failed to save message: $e');
+    }
   }
 
-  void saveAsLastMessage({
+  Future<void> saveAsLastMessage({
     required UserModel senderUserData,
     required UserModel receiverUserData,
     required String lastMessage,
@@ -621,7 +715,6 @@ class ChatRepository {
     required String receiverId,
   }) async {
     try {
-      // Get existing chat documents to check if they exist and get background image URLs
       final senderChatDoc =
           await firestore
               .collection('users')
@@ -638,7 +731,6 @@ class ChatRepository {
               .doc(auth.currentUser!.uid)
               .get();
 
-      // Create base message maps
       Map<String, dynamic> receiverLastMessageMap = {
         'username': senderUserData.username,
         'profileImageUrl': senderUserData.profileImageUrl,
@@ -655,30 +747,22 @@ class ChatRepository {
         'lastMessage': lastMessage,
       };
 
-      // Always include backgroundImageUrl field, even if it's null
-      // This ensures the field exists in the document
-
-      // For receiver's chat document
       if (receiverChatDoc.exists &&
           receiverChatDoc.data()!.containsKey('backgroundImageUrl')) {
         receiverLastMessageMap['backgroundImageUrl'] =
             receiverChatDoc.data()!['backgroundImageUrl'];
       } else {
-        // If no background image exists, explicitly set to null
         receiverLastMessageMap['backgroundImageUrl'] = null;
       }
 
-      // For sender's chat document
       if (senderChatDoc.exists &&
           senderChatDoc.data()!.containsKey('backgroundImageUrl')) {
         senderLastMessageMap['backgroundImageUrl'] =
             senderChatDoc.data()!['backgroundImageUrl'];
       } else {
-        // If no background image exists, explicitly set to null
         senderLastMessageMap['backgroundImageUrl'] = null;
       }
 
-      // Update receiver's chat document
       await firestore
           .collection('users')
           .doc(receiverId)
@@ -686,7 +770,6 @@ class ChatRepository {
           .doc(auth.currentUser!.uid)
           .set(receiverLastMessageMap);
 
-      // Update sender's chat document
       await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
@@ -694,13 +777,12 @@ class ChatRepository {
           .doc(receiverId)
           .set(senderLastMessageMap);
     } catch (e) {
-      log("Error saving last message: $e");
+      developer.log("Error saving last message: $e");
     }
   }
 
   Future<void> markMessageAsSeen(String senderId, String messageId) async {
     try {
-      // Update in sender's collection
       await firestore
           .collection('users')
           .doc(senderId)
@@ -713,7 +795,6 @@ class ChatRepository {
             'seenTime': DateTime.now().millisecondsSinceEpoch,
           });
 
-      // Update in receiver's (current user's) collection
       await firestore
           .collection('users')
           .doc(auth.currentUser!.uid)
@@ -726,13 +807,12 @@ class ChatRepository {
             'seenTime': DateTime.now().millisecondsSinceEpoch,
           });
     } catch (e) {
-      log('Error marking message as seen: $e');
+      developer.log('Error marking message as seen: $e');
     }
   }
 
   Future<void> markAllMessagesAsSeen(String senderId) async {
     try {
-      // Get all unseen messages from this sender
       final messages =
           await firestore
               .collection('users')
@@ -744,11 +824,9 @@ class ChatRepository {
               .where('isSeen', isEqualTo: false)
               .get();
 
-      // Create a batch to update all messages at once
       final batch = firestore.batch();
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      // Add each message to the batch for updating in receiver's collection
       for (var doc in messages.docs) {
         final messageRef = firestore
             .collection('users')
@@ -760,7 +838,6 @@ class ChatRepository {
 
         batch.update(messageRef, {'isSeen': true, 'seenTime': now});
 
-        // Also update in sender's collection
         final senderMessageRef = firestore
             .collection('users')
             .doc(senderId)
@@ -772,10 +849,9 @@ class ChatRepository {
         batch.update(senderMessageRef, {'isSeen': true, 'seenTime': now});
       }
 
-      // Commit the batch
       await batch.commit();
     } catch (e) {
-      log('Error marking all messages as seen: $e');
+      developer.log('Error marking all messages as seen: $e');
     }
   }
 }

@@ -7,24 +7,25 @@ import 'package:message_app/repositories/notification/notification_providers.dar
 import 'package:firebase_auth/firebase_auth.dart';
 
 // Provider for the token-aware auth controller
-final authStateProvider = StateNotifierProvider<AuthStateController, AsyncValue<User?>>((ref) {
-  final auth = FirebaseAuth.instance;
-  final tokenService = ref.watch(tokenServiceProvider);
-  return AuthStateController(auth, tokenService);
-});
+final authStateProvider =
+    StateNotifierProvider<AuthStateController, AsyncValue<User?>>((ref) {
+      final auth = FirebaseAuth.instance;
+      final tokenService = ref.watch(tokenServiceProvider);
+      return AuthStateController(auth, tokenService);
+    });
 
 // Original auth controller provider
 final authControllerProvider = Provider((ref) {
   final authRepository = ref.watch(authRepositoryProvider);
   final tokenService = ref.watch(tokenServiceProvider);
   return AuthController(
-    authRepository: authRepository, 
+    authRepository: authRepository,
     tokenService: tokenService,
-    ref: ref
+    ref: ref,
   );
 });
 
-final userInfoAuthProvider = FutureProvider((ref) {
+final userInfoAuthProvider = FutureProvider<UserModel?>((ref) async {
   final authController = ref.watch(authControllerProvider);
   return authController.getCurrentUserInfo();
 });
@@ -34,28 +35,26 @@ class AuthStateController extends StateNotifier<AsyncValue<User?>> {
   final FirebaseAuth _auth;
   final TokenService _tokenService;
 
-  AuthStateController(this._auth, this._tokenService) 
-      : super(const AsyncValue.loading()) {
+  AuthStateController(this._auth, this._tokenService)
+    : super(const AsyncValue.loading()) {
     _init();
   }
 
   void _init() {
-    _auth.authStateChanges().listen((user) {
+    _auth.authStateChanges().listen((user) async {
       state = AsyncValue.data(user);
-      
+
       if (user != null) {
-        _tokenService.saveToken();
+        await _tokenService.saveToken();
       }
     });
   }
 
   Future<void> signOut() async {
     try {
-      // Remove token before signing out
       await _tokenService.removeToken();
       await _auth.signOut();
     } catch (e) {
-      // Handle error
       state = AsyncValue.error(e, StackTrace.current);
     }
   }
@@ -68,32 +67,32 @@ class AuthController {
   final Ref ref;
 
   AuthController({
-    required this.ref, 
+    required this.ref,
     required this.authRepository,
     required this.tokenService,
   });
 
-  Stream<UserModel> getUserPrecenceStatus({required String uid}) {
-    return authRepository.getUserPrecenceStatus(uid: uid);
+  Stream<UserModel> getUserPresenceStatus({required String uid}) {
+    return authRepository.getUserPresenceStatus(uid: uid);
   }
 
-  void updateUserPrecence() {
-    return authRepository.updateUserPrecence();
+  void updateUserPresence() {
+    authRepository.updateUserPresence();
   }
 
   Future<UserModel?> getCurrentUserInfo() async {
     UserModel? user = await authRepository.getCurrentUserInfo();
-    
+
     if (user != null) {
       await tokenService.saveToken();
     }
-    
+
     return user;
   }
 
-  void saveUserInfoToFirestore({
+  Future<void> saveUserInfoToFirestore({
     required String username,
-    required var profileImage,
+    required dynamic profileImage,
     required BuildContext context,
     required bool mounted,
   }) async {
@@ -104,7 +103,7 @@ class AuthController {
       context: context,
       mounted: mounted,
     );
-    
+
     await tokenService.saveToken();
   }
 

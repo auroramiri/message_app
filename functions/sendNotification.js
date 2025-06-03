@@ -17,7 +17,7 @@ export const sendNotification = onDocumentCreated('users/{receiverId}/chats/{sen
     const messageDataReceiver = messageDocReceiver.data();
     const messageDataSender = messageDocSender.data();
 
-    const messageTitle = messageDataReceiver.textMessage || 'Unknown message';
+    const messageTitle = 'Новое сообщение';
     const messageSender = messageDataReceiver.senderId;
     const messageReceiver = messageDataReceiver.receiverId;
 

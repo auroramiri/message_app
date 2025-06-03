@@ -19,7 +19,7 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   late Timer timer;
   updateUserPrecence() {
-    ref.read(authControllerProvider).updateUserPrecence();
+    ref.read(authControllerProvider).updateUserPresence();
   }
 
   @override

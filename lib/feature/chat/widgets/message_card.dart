@@ -1,17 +1,33 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:custom_clippers/custom_clippers.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
+import 'package:message_app/common/services/encryption/key_generation_service.dart';
 import 'package:message_app/common/utils/context_menu.dart';
 import 'package:message_app/common/utils/file_utils.dart';
 import 'package:message_app/feature/chat/pages/chat_page.dart';
 import 'package:message_app/feature/chat/pages/video_player_screen.dart';
 import 'package:message_app/common/models/message_model.dart';
+import 'package:message_app/feature/chat/repositories/chat_repository.dart';
 import 'package:message_app/feature/chat/widgets/audio_message_player.dart';
 import 'package:message_app/feature/chat/widgets/build_image_message.dart';
 import 'package:message_app/feature/chat/widgets/message_time_send.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
+
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  final storage = FlutterSecureStorage();
+  final keyGenerationService = KeyGenerationService(secureStorage: storage);
+  return ChatRepository(
+    firestore: FirebaseFirestore.instance,
+    auth: FirebaseAuth.instance,
+    secureStorage: storage,
+    keyGenerationService: keyGenerationService,
+  );
+});
 
 class MessageCard extends ConsumerWidget {
   const MessageCard({
@@ -114,7 +130,7 @@ class MessageCard extends ConsumerWidget {
       case my_type.MessageType.audio:
         return _buildAudioMessage(context);
       default:
-        return _buildTextMessage(context);
+        return _buildTextMessage(context, ref);
     }
   }
 
@@ -134,40 +150,55 @@ class MessageCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildTextMessage(BuildContext context) {
-    return Column(
-      crossAxisAlignment:
-          isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(
-            top: 8,
-            left: isSender ? 10 : 15,
-            right: isSender ? 15 : 10,
-          ),
-          child: Text(
-            message.textMessage,
-            style: const TextStyle(fontSize: 16),
-          ),
-        ),
-        Padding(
-          padding: EdgeInsets.only(
-            bottom: 5,
-            left: isSender ? 10 : 15,
-            right: isSender ? 15 : 10,
-            top: 4,
-          ),
-          child: Row(
+  Widget _buildTextMessage(BuildContext context, WidgetRef ref) {
+    final chatRepository = ref.read(chatRepositoryProvider);
+
+    return FutureBuilder<String>(
+      future: chatRepository.decryptMessage(message.textMessage),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        } else {
+          final decryptedMessage = snapshot.data ?? 'No message';
+
+          return Column(
+            crossAxisAlignment:
+                isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              MessageTimeSend(message: message),
-              if (isSender) const SizedBox(width: 3),
-              if (isSender) _buildReadStatusIndicator(context),
+              Padding(
+                padding: EdgeInsets.only(
+                  top: 8,
+                  left: isSender ? 10 : 15,
+                  right: isSender ? 15 : 10,
+                ),
+                child: Text(
+                  decryptedMessage,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: 5,
+                  left: isSender ? 10 : 15,
+                  right: isSender ? 15 : 10,
+                  top: 4,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    MessageTimeSend(message: message),
+                    if (isSender) const SizedBox(width: 3),
+                    if (isSender) _buildReadStatusIndicator(context),
+                  ],
+                ),
+              ),
             ],
-          ),
-        ),
-      ],
+          );
+        }
+      },
     );
   }
 

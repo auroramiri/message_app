@@ -37,7 +37,7 @@ class ProfilePage extends ConsumerWidget {
                       StreamBuilder(
                         stream: ref
                             .read(authControllerProvider)
-                            .getUserPrecenceStatus(uid: user.uid),
+                            .getUserPresenceStatus(uid: user.uid),
                         builder: (_, snapshot) {
                           if (snapshot.connectionState !=
                               ConnectionState.active) {

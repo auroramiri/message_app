@@ -5,11 +5,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/helper/show_alert_dialog.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:message_app/common/routes/routes.dart';
+import 'package:message_app/common/services/encryption/key_generation_service.dart';
 import 'package:message_app/common/utils/coloors.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/common/widgets/short_h_bar.dart';
@@ -28,11 +30,8 @@ class UserProfilePage extends ConsumerStatefulWidget {
 }
 
 class _UserInfoPageState extends ConsumerState<UserProfilePage> {
-  final AuthRepository _authRepository = AuthRepository(
-    auth: FirebaseAuth.instance,
-    firestore: FirebaseFirestore.instance,
-    realtime: FirebaseDatabase.instance,
-  );
+  final storage = FlutterSecureStorage();
+  late AuthRepository _authRepository;
   File? imageCamera;
   Uint8List? imageGallery;
   UserModel? currentUser;
@@ -43,23 +42,33 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
 
   @override
   void initState() {
+    super.initState();
+
+    final keyGenerationService = KeyGenerationService(secureStorage: storage);
+
+    _authRepository = AuthRepository(
+      auth: FirebaseAuth.instance,
+      firestore: FirebaseFirestore.instance,
+      keyGenerationService: keyGenerationService,
+      realtime: FirebaseDatabase.instance,
+    );
+
     usernameController = TextEditingController();
     usernameFocusNode = FocusNode();
-    _fetchCurrentUser().then((_) {
-      if (mounted) {
-        usernameController = TextEditingController(
-          text: currentUser?.username ?? '',
-        );
-      }
-    });
-    super.initState();
+    _fetchCurrentUser();
+  }
+
+  @override
+  void dispose() {
+    usernameController.dispose();
+    usernameFocusNode.dispose();
+    super.dispose();
   }
 
   Future<void> signOut() async {
     try {
       await _authRepository.auth.signOut();
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
       if (mounted) {
@@ -94,33 +103,26 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     if (mounted) {
       setState(() {
         currentUser = user;
+        usernameController.text = currentUser?.username ?? '';
       });
     }
-  }
-
-  @override
-  void dispose() {
-    usernameController.dispose();
-    usernameFocusNode.dispose();
-    super.dispose();
   }
 
   Future<void> saveUserDataToFirebase() async {
     String username = usernameController.text;
 
     if (username.isEmpty) {
-      return showAllertDialog(
-        context: context,
-        message: 'Please, provide a username',
-      );
+      showAllertDialog(context: context, message: 'Please, provide a username');
+      return;
     } else if (username.length < 3 || username.length > 20) {
-      return showAllertDialog(
+      showAllertDialog(
         context: context,
         message: 'Username must be between 3 and 20 characters',
       );
+      return;
     }
 
-    ref
+    await ref
         .read(authControllerProvider)
         .saveUserInfoToFirestore(
           username: username,
@@ -130,16 +132,17 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
           mounted: mounted,
         );
 
-    setState(() {
-      isEditing = false;
-    });
+    if (mounted) {
+      setState(() {
+        isEditing = false;
+      });
+    }
   }
 
   Future<void> deleteUserAccount() async {
     try {
       await _authRepository.deleteUser();
-
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      final prefs = await SharedPreferences.getInstance();
       await prefs.clear();
 
       if (mounted) {
@@ -159,39 +162,39 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ShortHBar(),
+            const ShortHBar(),
             Row(
               children: [
-                SizedBox(width: 20),
+                const SizedBox(width: 20),
                 Text(
                   'Profile photo',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
                 ),
-                Spacer(),
+                const Spacer(),
                 CustomIconButton(
                   onPressed: () => Navigator.pop(context),
                   icon: Icons.close,
                 ),
-                SizedBox(width: 15),
+                const SizedBox(width: 15),
               ],
             ),
             Divider(color: context.theme.greyColor!.withValues(alpha: 0.3)),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             Row(
               children: [
-                SizedBox(width: 20),
+                const SizedBox(width: 20),
                 imagePickerIcon(
                   onTap: pickImageFromCamera,
                   icon: Icons.camera_alt_rounded,
                   text: 'Camera',
                 ),
-                SizedBox(width: 15),
+                const SizedBox(width: 15),
                 imagePickerIcon(
                   onTap: () async {
                     Navigator.pop(context);
                     final image = await Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => ImagePickerPage(),
+                        builder: (context) => const ImagePickerPage(),
                       ),
                     );
                     if (image == null) return;
@@ -205,7 +208,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                 ),
               ],
             ),
-            SizedBox(height: 15),
+            const SizedBox(height: 15),
           ],
         );
       },
@@ -216,13 +219,16 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     Navigator.of(context).pop();
     try {
       final image = await ImagePicker().pickImage(source: ImageSource.camera);
-      setState(() {
-        imageCamera = File(image!.path);
-        imageGallery = null;
-      });
+      if (image != null && mounted) {
+        setState(() {
+          imageCamera = File(image.path);
+          imageGallery = null;
+        });
+      }
     } catch (e) {
-      if (!mounted) return;
-      showAllertDialog(context: context, message: e.toString());
+      if (mounted) {
+        showAllertDialog(context: context, message: e.toString());
+      }
     }
   }
 
@@ -239,11 +245,11 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
           iconColor: Coloors.blueDark,
           minWidth: 50,
           border: Border.all(
-            color: context.theme.greyColor!.withValues(alpha: .2),
+            color: context.theme.greyColor!.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
-        SizedBox(height: 5),
+        const SizedBox(height: 5),
         Text(text, style: TextStyle(color: context.theme.greyColor)),
       ],
     );
@@ -267,7 +273,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
         centerTitle: true,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
             GestureDetector(
@@ -275,7 +281,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
               child: Container(
                 width: 250,
                 height: 250,
-                padding: EdgeInsets.all(1),
+                padding: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: context.theme.photoIconBgColor,
@@ -294,11 +300,9 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                             image:
                                 imageGallery != null
                                     ? MemoryImage(imageGallery!)
-                                        as ImageProvider
                                     : currentUser?.profileImageUrl != null
                                     ? NetworkImage(currentUser!.profileImageUrl)
-                                        as ImageProvider
-                                    : FileImage(imageCamera!) as ImageProvider,
+                                    : FileImage(imageCamera!),
                           )
                           : null,
                 ),
@@ -317,14 +321,14 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                 ),
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Text(
               currentUser?.phoneNumber ?? 'Loading...',
               style: TextStyle(fontSize: 20, color: context.theme.greyColor),
             ),
             Row(
               children: [
-                SizedBox(width: 20),
+                const SizedBox(width: 20),
                 Expanded(
                   child: CustomTextField(
                     controller: usernameController,
@@ -334,13 +338,13 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                     autoFocus: false,
                   ),
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
                 CustomIconButton(
                   icon: isEditing ? Icons.done : Icons.edit,
                   iconColor: context.theme.blueColor,
                   onPressed: toggleEditing,
                 ),
-                SizedBox(width: 10),
+                const SizedBox(width: 10),
               ],
             ),
             const CustomListTile(
@@ -360,7 +364,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
               contentPadding: const EdgeInsets.only(left: 25, right: 10),
               leading: const Icon(Icons.block, color: Color(0xFFF15C6D)),
               title: Text(
-                'Delete account:  ${currentUser?.username ?? 'Loading'}',
+                'Delete account: ${currentUser?.username ?? 'Loading'}',
                 style: const TextStyle(color: Color(0xFFF15C6D)),
               ),
               onTap: () {
@@ -368,19 +372,19 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: Text('Delete Account'),
-                      content: Text(
+                      title: const Text('Delete Account'),
+                      content: const Text(
                         'Are you sure you want to delete your account?',
                       ),
                       actions: <Widget>[
                         TextButton(
-                          child: Text('Cancel'),
+                          child: const Text('Cancel'),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
                         ),
                         TextButton(
-                          child: Text('Delete'),
+                          child: const Text('Delete'),
                           onPressed: () {
                             Navigator.of(context).pop();
                             deleteUserAccount();

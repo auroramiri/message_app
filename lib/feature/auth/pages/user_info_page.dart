@@ -15,9 +15,10 @@ import 'package:message_app/feature/auth/pages/image_picker_page.dart';
 import 'package:message_app/feature/auth/widgets/custom_text_field.dart';
 
 class UserInfoPage extends ConsumerStatefulWidget {
-  const UserInfoPage({super.key, this.profileImageUrl});
+  const UserInfoPage({super.key, this.profileImageUrl, this.username});
 
   final String? profileImageUrl;
+  final String? username;
 
   @override
   ConsumerState<UserInfoPage> createState() => _UserInfoPageState();
@@ -154,6 +155,9 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
   @override
   void initState() {
     usernameController = TextEditingController();
+    if (widget.username != null && widget.username!.isNotEmpty) {
+      usernameController.text = widget.username!;
+    }
     super.initState();
   }
 
@@ -236,7 +240,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                 Expanded(
                   child: CustomTextField(
                     controller: usernameController,
-                    hintText: 'Type your name here',
+                    hintText: AutofillHints.username,
                     textAlign: TextAlign.left,
                     autoFocus: true,
                   ),

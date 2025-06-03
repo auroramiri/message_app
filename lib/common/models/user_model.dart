@@ -8,7 +8,7 @@ class UserModel {
   final List<String> groupId;
   final bool isAdmin;
   final String fcmToken;
-  final String? rsaPublicKeyPem;
+  final String? rsaPublicKey;
 
   UserModel({
     required this.username,
@@ -20,7 +20,7 @@ class UserModel {
     required this.groupId,
     this.isAdmin = false,
     required this.fcmToken,
-    this.rsaPublicKeyPem,
+    this.rsaPublicKey,
   });
 
   Map<String, dynamic> toMap() {
@@ -34,7 +34,7 @@ class UserModel {
       'groupId': groupId,
       'isAdmin': isAdmin,
       'fcmToken': fcmToken,
-      'rsaPublicKeyPem': rsaPublicKeyPem,
+      'rsaPublicKey': rsaPublicKey,
     };
   }
 
@@ -49,7 +49,7 @@ class UserModel {
       groupId: List<String>.from(map['groupId'] ?? []),
       isAdmin: map['isAdmin'] ?? false,
       fcmToken: map['fcmToken'] ?? '',
-      rsaPublicKeyPem: map['rsaPublicKeyPem'],
+      rsaPublicKey: map['rsaPublicKey'] ?? '',
     );
   }
 }
