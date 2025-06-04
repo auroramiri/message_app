@@ -4,8 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:message_app/common/models/group_chat_model.dart';
 import 'package:message_app/common/models/group_message_model.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
-import 'package:message_app/feature/chat/widgets/show_date_card.dart';
+import 'package:message_app/common/utils/show_date_card.dart';
 import 'package:message_app/feature/group_chat/controllers/group_chat_controller.dart';
+import 'package:message_app/feature/group_chat/pages/group_profile_page.dart';
 import 'package:message_app/feature/group_chat/repositories/group_chat_repository.dart';
 import 'package:message_app/feature/group_chat/widgets/group_chat_text_field.dart';
 import 'package:message_app/feature/group_chat/widgets/group_message_card.dart';
@@ -42,7 +43,12 @@ class GroupChatPage extends ConsumerWidget {
         actions: [
           CustomIconButton(
             onPressed: () {
-              // Handle group-specific actions, like viewing group info
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => GroupProfilePage(group: group),
+                ),
+              );
             },
             icon: Icons.info,
             iconColor: Colors.white,
@@ -76,6 +82,7 @@ class GroupChatPage extends ConsumerWidget {
                     final isSender =
                         message.senderId ==
                         FirebaseAuth.instance.currentUser?.uid;
+                    final isModerator = group.moderatorIds[0] == FirebaseAuth.instance.currentUser?.uid;
 
                     final haveNip =
                         index == 0 ||
@@ -102,6 +109,7 @@ class GroupChatPage extends ConsumerWidget {
                               haveNip: haveNip,
                               message: message,
                               senderName: senderName,
+                              isModerator: isModerator,
                             ),
                           ],
                         );

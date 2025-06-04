@@ -22,7 +22,7 @@ import 'package:message_app/feature/auth/controller/auth_controller.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
 import 'package:message_app/feature/chat/widgets/chat_text_field.dart';
 import 'package:message_app/feature/chat/widgets/message_card.dart';
-import 'package:message_app/feature/chat/widgets/show_date_card.dart';
+import 'package:message_app/common/utils/show_date_card.dart';
 import 'package:message_app/feature/chat/widgets/yellow_card.dart';
 
 final pageStorageBucket = PageStorageBucket();

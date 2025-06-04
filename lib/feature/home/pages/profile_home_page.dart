@@ -19,7 +19,7 @@ import 'package:message_app/feature/auth/controller/auth_controller.dart';
 import 'package:message_app/feature/auth/pages/image_picker_page.dart';
 import 'package:message_app/feature/auth/repository/auth_repository.dart';
 import 'package:message_app/feature/auth/widgets/custom_text_field.dart';
-import 'package:message_app/feature/chat/widgets/custom_list_tile.dart';
+import 'package:message_app/common/utils/custom_list_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class UserProfilePage extends ConsumerStatefulWidget {
@@ -346,12 +346,6 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                 ),
                 const SizedBox(width: 10),
               ],
-            ),
-            const CustomListTile(
-              title: 'Encryption',
-              subTitle:
-                  'Messages and calls are end-to-end encrypted, Tap to verify.',
-              leading: Icons.lock,
             ),
             const SizedBox(height: 10),
             CustomListTile(

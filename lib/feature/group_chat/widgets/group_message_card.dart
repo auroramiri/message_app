@@ -12,7 +12,7 @@ import 'package:message_app/common/utils/file_utils.dart';
 import 'package:message_app/feature/chat/pages/video_player_screen.dart';
 import 'package:message_app/feature/chat/widgets/audio_message_player.dart';
 import 'package:message_app/feature/chat/widgets/build_image_message.dart';
-import 'package:message_app/feature/chat/widgets/message_time_send.dart';
+import 'package:message_app/common/utils/message_time_send.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
 
 class GroupMessageCard extends ConsumerWidget {
@@ -22,12 +22,14 @@ class GroupMessageCard extends ConsumerWidget {
     required this.haveNip,
     required this.message,
     required this.senderName,
+    required this.isModerator,
   });
 
   final bool isSender;
   final bool haveNip;
   final GroupMessageModel message;
   final String senderName;
+  final bool isModerator;
 
   MessageModel convertToMessageModel(GroupMessageModel groupMessage) {
     return MessageModel(
@@ -51,13 +53,7 @@ class GroupMessageCard extends ConsumerWidget {
       onLongPress: () {
         final renderBox = context.findRenderObject() as RenderBox;
         final position = renderBox.localToGlobal(Offset.zero);
-        showContextMenu(
-          context,
-          position,
-          ref,
-          convertToMessageModel(message),
-          isSender,
-        );
+        showContextMenu(context, position, ref, message, isSender, isModerator);
       },
       child: Container(
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,

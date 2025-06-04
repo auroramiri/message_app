@@ -37,6 +37,7 @@ class GroupChatRepository {
         groupIconUrl: groupIconUrl,
         createdBy: currentUserId,
         participantIds: [...uniqueParticipantIds, currentUserId],
+        moderatorIds: [currentUserId],
         createdAt: DateTime.now(),
         lastMessage: '',
       );
@@ -174,6 +175,52 @@ class GroupChatRepository {
     } catch (e) {
       developer.log('Error deleting group message $messageId: $e');
       throw Exception('Failed to delete message: $e');
+    }
+  }
+
+  Future<void> addParticipant({
+    required String groupId,
+    required String participantId,
+  }) async {
+    try {
+      // Add participant to the group
+      await firestore.collection('groups').doc(groupId).update({
+        'participantIds': FieldValue.arrayUnion([participantId]),
+      });
+
+      // Add group to the participant's list of groups
+      await firestore
+          .collection('users')
+          .doc(participantId)
+          .collection('groups')
+          .doc(groupId)
+          .set({'groupId': groupId});
+    } catch (e) {
+      developer.log('Error adding participant: $e');
+      throw Exception('Failed to add participant: $e');
+    }
+  }
+
+  Future<void> removeParticipant({
+    required String groupId,
+    required String participantId,
+  }) async {
+    try {
+      // Remove participant from the group
+      await firestore.collection('groups').doc(groupId).update({
+        'participantIds': FieldValue.arrayRemove([participantId]),
+      });
+
+      // Remove group from the participant's list of groups
+      await firestore
+          .collection('users')
+          .doc(participantId)
+          .collection('groups')
+          .doc(groupId)
+          .delete();
+    } catch (e) {
+      developer.log('Error removing participant: $e');
+      throw Exception('Failed to remove participant: $e');
     }
   }
 }

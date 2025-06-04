@@ -4,28 +4,33 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
+import 'package:message_app/common/models/group_message_model.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/controller/chat_controller.dart';
+import 'package:message_app/feature/group_chat/controllers/group_chat_controller.dart';
 
 void showContextMenu(
   BuildContext context,
   Offset tapPosition,
   WidgetRef ref,
-  MessageModel message,
+  dynamic message,
   bool isSender,
+  bool isModerator,
 ) {
+  developer.log('showContextMenu called with position: $tapPosition');
   final overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
   final position = RelativeRect.fromRect(
     Rect.fromPoints(tapPosition, tapPosition),
     Offset.zero & overlay.size,
   );
+  developer.log("Showing menu at position: $position");
 
   showMenu<String>(
     context: context,
     position: position,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
     elevation: 2,
-    items: buildContextMenuItems(message, isSender),
+    items: buildContextMenuItems(message, isSender, isModerator),
   ).then((value) {
     if (context.mounted) {
       handleMenuSelection(context, value, ref, message);
@@ -34,8 +39,9 @@ void showContextMenu(
 }
 
 List<PopupMenuItem<String>> buildContextMenuItems(
-  MessageModel message,
+  dynamic message,
   bool isSender,
+  bool isModerator,
 ) {
   return [
     if (message.type == my_type.MessageType.text)
@@ -43,7 +49,7 @@ List<PopupMenuItem<String>> buildContextMenuItems(
         value: 'copy',
         child: buildMenuItem(Icons.copy, 'Copy'),
       ),
-    if (isSender)
+    if (isSender || isModerator)
       PopupMenuItem<String>(
         value: 'delete',
         child: buildMenuItem(
@@ -82,13 +88,25 @@ void handleMenuSelection(
   BuildContext context,
   String? value,
   WidgetRef ref,
-  MessageModel message,
+  dynamic message,
 ) async {
   if (value == null) return;
 
   switch (value) {
     case 'copy':
-      copyMessage(context, message);
+      if (message is MessageModel ||
+          message is GroupMessageModel &&
+              message.type == my_type.MessageType.text) {
+        await Clipboard.setData(ClipboardData(text: message.textMessage));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Message copied to clipboard'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
       break;
     case 'delete':
       showDeleteConfirmation(context, ref, message);
@@ -102,24 +120,10 @@ void handleMenuSelection(
   }
 }
 
-void copyMessage(BuildContext context, MessageModel message) async {
-  if (message.type == my_type.MessageType.text) {
-    await Clipboard.setData(ClipboardData(text: message.textMessage));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Message copied to clipboard'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  }
-}
-
 void showDeleteConfirmation(
   BuildContext context,
   WidgetRef ref,
-  MessageModel message,
+  dynamic message,
 ) {
   showDialog(
     context: context,
@@ -136,12 +140,21 @@ void showDeleteConfirmation(
               onPressed: () async {
                 Navigator.pop(dialogContext);
                 showLoadingDialog(context, () async {
-                  await ref
-                      .read(chatControllerProvider)
-                      .deleteMessage(
-                        messageId: message.messageId,
-                        context: context,
-                      );
+                  if (message is MessageModel) {
+                    await ref
+                        .read(chatControllerProvider)
+                        .deleteMessage(
+                          messageId: message.messageId,
+                          context: context,
+                        );
+                  } else if (message is GroupMessageModel) {
+                    await ref
+                        .read(groupChatControllerProvider)
+                        .deleteGroupMessage(
+                          groupId: message.groupId,
+                          messageId: message.messageId,
+                        );
+                  }
                   if (context.mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -161,21 +174,20 @@ void showDeleteConfirmation(
 void showLoadingDialog(BuildContext context, Future<void> Function() action) {
   showDialog(
     context: context,
-    barrierDismissible: false, // Пользователь не может закрыть его тапом вне
-    builder:
-        (context) => const Center(
-          child: CircularProgressIndicator(), // Или любой другой индикатор
-        ),
+    barrierDismissible: false,
+    builder: (context) => const Center(child: CircularProgressIndicator()),
   );
 
   action()
       .then((_) {
-        Navigator.of(context, rootNavigator: true).pop();
+        if (context.mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
       })
       .catchError((error) {
         developer.log('Error performing action: $error');
         if (context.mounted) {
-          Navigator.of(context).pop();
+          Navigator.of(context, rootNavigator: true).pop();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to perform action: $error')),
           );

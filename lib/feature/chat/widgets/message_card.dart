@@ -1,3 +1,4 @@
+import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:custom_clippers/custom_clippers.dart';
@@ -15,7 +16,7 @@ import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/repositories/chat_repository.dart';
 import 'package:message_app/feature/chat/widgets/audio_message_player.dart';
 import 'package:message_app/feature/chat/widgets/build_image_message.dart';
-import 'package:message_app/feature/chat/widgets/message_time_send.dart';
+import 'package:message_app/common/utils/message_time_send.dart';
 import 'package:message_app/common/enum/message_type.dart' as my_type;
 
 final chatRepositoryProvider = Provider<ChatRepository>((ref) {
@@ -41,6 +42,8 @@ class MessageCard extends ConsumerWidget {
   final bool haveNip;
   final MessageModel message;
 
+  final bool isModerator = false;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final uploadingImages = ref.watch(uploadingImagesProvider);
@@ -50,7 +53,7 @@ class MessageCard extends ConsumerWidget {
       onLongPress: () {
         final renderBox = context.findRenderObject() as RenderBox;
         final position = renderBox.localToGlobal(Offset.zero);
-        showContextMenu(context, position, ref, message, isSender);
+        showContextMenu(context, position, ref, message, isSender, isModerator);
       },
       child: Container(
         alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
@@ -124,7 +127,7 @@ class MessageCard extends ConsumerWidget {
       case my_type.MessageType.image:
         return buildImageMessage(context, isUploading, ref, message);
       case my_type.MessageType.file:
-        return _buildFileMessage(context);
+        return _buildFileMessage(context, ref);
       case my_type.MessageType.video:
         return _buildVideoMessage(context, isUploading);
       case my_type.MessageType.audio:
@@ -254,86 +257,127 @@ class MessageCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildFileMessage(BuildContext context) {
-    final fileName = message.textMessage;
-    final fileExtension = getFileExtension(fileName);
-    final fileNameWithoutExtension = getFileNameWithoutExtension(fileName);
+  Widget _buildFileMessage(BuildContext context, WidgetRef ref) {
+    // Получаем fileUrl и fileSize напрямую, они не зашифрованы
+    final fileUrl = message.fileUrl;
     final fileSizeInBytes = message.fileSize ?? 0;
     final formattedFileSize = formatFileSize(fileSizeInBytes.toDouble());
-    final fileUrl = message.fileUrl;
 
-    return Container(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    // Используем FutureBuilder для асинхронной расшифровки названия файла
+    return FutureBuilder<String>(
+      future: ref
+          .read(chatRepositoryProvider)
+          .decryptMessage(message.textMessage),
+      builder: (context, snapshot) {
+        String displayedFileName =
+            'Загрузка названия файла...'; // Текст по умолчанию
+        String? decryptedFileName; // Переменная для расшифрованного названия
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Пока ждем расшифровки, показываем индикатор или текст загрузки
+          displayedFileName = 'Загрузка названия...';
+        } else if (snapshot.hasError) {
+          // Если произошла ошибка расшифровки
+          displayedFileName = 'Ошибка расшифровки названия';
+          developer.log(
+            'Error decrypting file name: ${snapshot.error}',
+          ); // Логируем ошибку
+        } else if (snapshot.hasData) {
+          // Если расшифровка успешна
+          decryptedFileName = snapshot.data!;
+          displayedFileName = decryptedFileName;
+        }
+
+        // Извлекаем расширение и имя без расширения для отображения,
+        // используя либо расшифрованное имя, либо текст загрузки/ошибки
+        final fileExtension = getFileExtension(displayedFileName);
+        final fileNameWithoutExtension = getFileNameWithoutExtension(
+          displayedFileName,
+        );
+
+        return Container(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                Icons.insert_drive_file,
-                size: 32,
-                color: context.theme.greyColor,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fileNameWithoutExtension,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Icon(
+                    Icons.insert_drive_file,
+                    size: 32,
+                    color: context.theme.greyColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fileNameWithoutExtension,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          fileExtension,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: context.theme.greyColor,
+                          ),
+                        ),
+                      ],
                     ),
-                    Text(
-                      fileExtension,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: context.theme.greyColor,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  // Кнопка скачивания
+                  IconButton(
+                    icon: const Icon(Icons.download),
+                    // Кнопка активна только если есть fileUrl И название файла расшифровано
+                    onPressed:
+                        fileUrl != null && decryptedFileName != null
+                            ? () => saveFile(
+                              context,
+                              fileUrl,
+                              decryptedFileName!,
+                            ) // <-- Передаем расшифрованное название
+                            : null, // Кнопка неактивна, пока нет URL или название не расшифровано
+                  ),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.download),
-                onPressed:
-                    fileUrl != null
-                        ? () => saveFile(context, fileUrl, fileName)
-                        : null,
+              const SizedBox(height: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    formattedFileSize,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: context.theme.greyColor,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      bottom: 5,
+                      left: 10,
+                      right: 0,
+                      top: 4,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MessageTimeSend(message: message),
+                        if (isSender) const SizedBox(width: 3),
+                        if (isSender) _buildReadStatusIndicator(context),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                formattedFileSize,
-                style: TextStyle(fontSize: 10, color: context.theme.greyColor),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 5,
-                  left: 10,
-                  right: 0,
-                  top: 4,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    MessageTimeSend(message: message),
-                    if (isSender) const SizedBox(width: 3),
-                    if (isSender) _buildReadStatusIndicator(context),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 

@@ -1,13 +1,15 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/helper/last_seen_message.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:message_app/common/utils/coloors.dart';
+import 'package:message_app/common/utils/disappearing_message_servise.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/auth/controller/auth_controller.dart';
-import 'package:message_app/feature/chat/widgets/custom_list_tile.dart';
+import 'package:message_app/common/utils/custom_list_tile.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key, required this.user});
@@ -16,6 +18,7 @@ class ProfilePage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final String chatId = user.uid;
     return Scaffold(
       backgroundColor: context.theme.profilePageBg,
       body: CustomScrollView(
@@ -72,84 +75,26 @@ class ProfilePage extends ConsumerWidget {
                           );
                         },
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          iconWithText(icon: Icons.call, text: 'Call'),
-                          iconWithText(icon: Icons.video_call, text: 'Video'),
-                          iconWithText(icon: Icons.search, text: 'Search'),
-                        ],
-                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 20),
-                // ListTile(
-                //   contentPadding: const EdgeInsets.only(left: 30),
-                //   title: const Text('Hey there! I am using Бундъварка'),
-                //   subtitle: Text(
-                //     '17th February',
-                //     style: TextStyle(color: context.theme.greyColor),
-                //   ),
-                // ),
-                const SizedBox(height: 20),
                 CustomListTile(
-                  title: 'Mute notification',
-                  leading: Icons.notifications,
-                  trailing: Switch(value: false, onChanged: (value) {}),
-                ),
-                const CustomListTile(
-                  title: 'Custom notification',
-                  leading: Icons.music_note,
-                ),
-                CustomListTile(
-                  title: 'Media visibility',
-                  leading: Icons.photo,
-                  trailing: Switch(value: false, onChanged: (value) {}),
-                ),
-                const SizedBox(height: 20),
-                const CustomListTile(
-                  title: 'Encryption',
-                  subTitle:
-                      'Messages and calls are end-to-end encrypted, Tap to verify.',
-                  leading: Icons.lock,
-                ),
-                const CustomListTile(
                   title: 'Disappearing messages',
-                  subTitle: 'Off',
                   leading: Icons.timer,
+                  subTitle: 'Set a timer to delete messages',
+                  onTimeSelected: (time) {
+                    final disappearingMessagesService =
+                        DisappearingMessagesService(
+                          firestore: FirebaseFirestore.instance,
+                        );
+                    disappearingMessagesService.setDisappearingMessagesTimer(
+                      time,
+                      chatId,
+                    );
+                  },
                 ),
                 const SizedBox(height: 20),
-                ListTile(
-                  leading: CustomIconButton(
-                    onPressed: () {},
-                    icon: Icons.group,
-                    background: Coloors.blueDark,
-                    iconColor: Colors.white,
-                  ),
-                  title: Text('Create group with ${user.username}'),
-                ),
-                const SizedBox(height: 20),
-                ListTile(
-                  contentPadding: const EdgeInsets.only(left: 25, right: 10),
-                  leading: const Icon(Icons.block, color: Color(0xFFF15C6D)),
-                  title: Text(
-                    'Block ${user.username}',
-                    style: const TextStyle(color: Color(0xFFF15C6D)),
-                  ),
-                ),
-                ListTile(
-                  contentPadding: const EdgeInsets.only(left: 25, right: 10),
-                  leading: const Icon(
-                    Icons.thumb_down,
-                    color: Color(0xFFF15C6D),
-                  ),
-                  title: Text(
-                    'Report ${user.username}',
-                    style: const TextStyle(color: Color(0xFFF15C6D)),
-                  ),
-                ),
-                const SizedBox(height: 40),
               ],
             ),
           ),

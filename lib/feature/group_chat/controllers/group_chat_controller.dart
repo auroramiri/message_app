@@ -93,10 +93,36 @@ class GroupChatController {
         messageId: messageId,
       );
     } catch (e) {
-      log(
-        'Error from controller deleting message: $e',
-      );
+      log('Error from controller deleting message: $e');
       rethrow; // Перебрасываем ошибку, чтобы UI мог ее обработать
+    }
+  }
+
+  Future<void> addParticipant({
+    required String groupId,
+    required String participantId,
+  }) async {
+    try {
+      await _groupChatRepository.addParticipant(
+        groupId: groupId,
+        participantId: participantId,
+      );
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> removeParticipant({
+    required String groupId,
+    required String participantId,
+  }) async {
+    try {
+      await _groupChatRepository.removeParticipant(
+        groupId: groupId,
+        participantId: participantId,
+      );
+    } catch (e) {
+      rethrow;
     }
   }
 }
