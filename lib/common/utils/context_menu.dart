@@ -116,7 +116,11 @@ void copyMessage(BuildContext context, MessageModel message) async {
   }
 }
 
-void showDeleteConfirmation(BuildContext context, WidgetRef ref, MessageModel message) {
+void showDeleteConfirmation(
+  BuildContext context,
+  WidgetRef ref,
+  MessageModel message,
+) {
   showDialog(
     context: context,
     builder:
@@ -157,17 +161,16 @@ void showDeleteConfirmation(BuildContext context, WidgetRef ref, MessageModel me
 void showLoadingDialog(BuildContext context, Future<void> Function() action) {
   showDialog(
     context: context,
-    barrierDismissible: false,
-    builder: (ctx) {
-      return const Center(child: CircularProgressIndicator());
-    },
+    barrierDismissible: false, // Пользователь не может закрыть его тапом вне
+    builder:
+        (context) => const Center(
+          child: CircularProgressIndicator(), // Или любой другой индикатор
+        ),
   );
 
   action()
       .then((_) {
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
+        Navigator.of(context, rootNavigator: true).pop();
       })
       .catchError((error) {
         developer.log('Error performing action: $error');

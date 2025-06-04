@@ -3,10 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:message_app/common/routes/routes.dart';
-import 'package:message_app/common/utils/coloors.dart';
 import 'package:message_app/common/widgets/contact_card.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/contact/controllers/contacts_controller_provider.dart';
+import 'package:message_app/feature/contact/widgets/my_list_tile.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ContactPage extends ConsumerStatefulWidget {
@@ -172,6 +172,11 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                                   myListTile(
                                     leading: Icons.group,
                                     text: 'New group',
+                                    onTap: () {
+                                      Navigator.of(
+                                        context,
+                                      ).pushNamed(Routes.groupSettings);
+                                    },
                                   ),
                                   Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -236,27 +241,6 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                       return const Center(child: CircularProgressIndicator());
                     },
                   ),
-    );
-  }
-
-  ListTile myListTile({
-    required IconData leading,
-    required String text,
-    IconData? trailing,
-  }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.only(top: 10, left: 20, right: 10),
-      leading: CircleAvatar(
-        radius: 20,
-        backgroundColor: Coloors.blueDark,
-        child: Icon(leading, color: Colors.white),
-      ),
-      title: Text(
-        text,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-      ),
-      trailing:
-          trailing != null ? Icon(trailing, color: Coloors.greyDark) : null,
     );
   }
 }
