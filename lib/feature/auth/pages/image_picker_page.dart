@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -59,14 +60,18 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
                 child: InkWell(
                   // ИЗМЕНЕНИЕ ЗДЕСЬ: Получаем файл и возвращаем его
                   onTap: () async {
-                    final file =
-                        await asset.file; // Получаем объект File из AssetEntity
+                    final Uint8List? file = await asset.thumbnailDataWithSize(
+                      const ThumbnailSize(200, 200),
+                    );
                     if (file != null) {
-                      Navigator.pop(context, file); // Возвращаем объект File
+                      if (context.mounted) {
+                        Navigator.pop(
+                          context,
+                          file,
+                        ); // Возвращаем данные изображения
+                      }
                     } else {
-                      // Обработка случая, если файл не получен
                       log('Error: Could not get file for asset.');
-                      // Возможно, показать сообщение пользователю
                     }
                   },
                   borderRadius: BorderRadius.circular(5),
@@ -117,7 +122,7 @@ class _ImagePickerPageState extends State<ImagePickerPage> {
           icon: Icons.arrow_back,
         ),
         title: Text(
-          'Бундъварка', // Замените на актуальный текст
+          'app_title'.tr, // Замените на актуальный текст
           style: TextStyle(color: context.theme.authAppbarTextColor),
         ),
         actions: [CustomIconButton(onPressed: () {}, icon: Icons.more_vert)],

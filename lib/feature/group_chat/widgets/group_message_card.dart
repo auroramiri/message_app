@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:custom_clippers/custom_clippers.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/group_message_model.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/message_model.dart';
@@ -367,8 +368,8 @@ class GroupMessageCard extends ConsumerWidget {
                     children: [
                       const Icon(Icons.videocam, color: Colors.white, size: 16),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Video',
+                      Text(
+                        'video'.tr,
                         style: TextStyle(color: Colors.white, fontSize: 12),
                       ),
                       const SizedBox(width: 4),

@@ -12,6 +12,7 @@ import 'package:message_app/common/theme/dark_theme.dart';
 import 'package:message_app/common/theme/light_theme.dart';
 import 'package:message_app/feature/auth/controller/auth_controller.dart';
 import 'package:message_app/feature/home/pages/home_page.dart';
+import 'package:message_app/feature/home/pages/settings_home_page.dart';
 import 'package:message_app/feature/welcome/pages/welcome_page.dart';
 import 'package:message_app/firebase_options.dart';
 import 'package:message_app/repositories/notification/background_message_handler.dart';
@@ -128,14 +129,21 @@ class _ChatAppState extends ConsumerState<ChatApp> {
 
   @override
   Widget build(BuildContext context) {
+    final themeMode = ref.watch(themeModeProvider);
+
+    // Убедитесь, что Splash Screen удаляется после загрузки
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      FlutterNativeSplash.remove();
+    });
+
     return GetMaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'БундъВарка',
+      title: 'app_title'.tr,
       theme: lightTheme(),
       darkTheme: darkTheme(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       translations: AppTranslations(),
-      locale: Locale('en', 'US'),
+      locale: const Locale('en', 'US'),
       fallbackLocale: const Locale('en', 'US'),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -151,17 +159,19 @@ class _ChatAppState extends ConsumerState<ChatApp> {
           .watch(userInfoAuthProvider)
           .when(
             data: (user) {
-              FlutterNativeSplash.remove();
-              if (user == null) return const WelcomePage();
-              return HomePage();
+              if (user == null) {
+                return const WelcomePage();
+              } else {
+                return const HomePage();
+              }
             },
             error: (error, trace) {
-              return Scaffold(
+              return const Scaffold(
                 body: Center(child: Text('Something went wrong!')),
               );
             },
             loading: () {
-              return SizedBox();
+              return const SizedBox();
             },
           ),
       onGenerateRoute: Routes.onGenerateRoute,

@@ -1,6 +1,7 @@
 import 'package:country_picker/country_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/helper/show_alert_dialog.dart';
 import 'package:message_app/common/utils/coloors.dart';
@@ -29,25 +30,28 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     if (phoneNumber.isEmpty) {
       return showAllertDialog(
         context: context,
-        message: "Please enter your phone number",
+        message: "enter_phone_number".tr,
       );
     } else if (phoneNumber.length < 9) {
       return showAllertDialog(
         context: context,
         message:
-            "The phone number is too short for the country: $countryName. \n\nInclude your area if you haven't ",
+            "${'phone_number_too_short'.tr} $countryName. ${'include_area_code'.tr}",
       );
     } else if (phoneNumber.length > 10) {
       return showAllertDialog(
         context: context,
-        message: "The phone number you entered is too long",
+        message: "phone_number_too_long".tr,
       );
     }
 
     //request a verification code
     ref
         .read(authControllerProvider)
-        .sendSmsCode(context: context, phoneNumber: '+$countryCode$phoneNumber');
+        .sendSmsCode(
+          context: context,
+          phoneNumber: '+$countryCode$phoneNumber',
+        );
   }
 
   showCountryCodePicker() {
@@ -64,7 +68,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         inputDecoration: InputDecoration(
           labelStyle: TextStyle(color: context.theme.greyColor),
           prefixIcon: const Icon(Icons.language, color: Coloors.blueDark),
-          hintText: 'Search country code or name',
+          hintText: 'search_country'.tr,
           enabledBorder: UnderlineInputBorder(
             borderSide: BorderSide(
               color: context.theme.blueColor!.withValues(alpha: 0.2),
@@ -105,7 +109,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Text(
-          'Enter your phone number',
+          'enter_phone_number'.tr,
           style: TextStyle(color: context.theme.authAppbarTextColor),
         ),
         centerTitle: true,
@@ -118,11 +122,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             child: RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
-                text: 'Verify your phone number. ',
+                text: 'verify_phone_number'.tr,
                 style: TextStyle(color: context.theme.greyColor, height: 1.5),
                 children: [
                   TextSpan(
-                    text: "What's my number?",
+                    text: "whats_my_number".tr,
                     style: TextStyle(color: context.theme.blueColor),
                   ),
                 ],
@@ -160,7 +164,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 Expanded(
                   child: CustomTextField(
                     controller: phoneNumberController,
-                    hintText: 'phone number',
+                    hintText: 'phone_number'.tr,
                     textAlign: TextAlign.left,
                     keyboardType: TextInputType.number,
                   ),
@@ -170,7 +174,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
           ),
           const SizedBox(height: 20),
           Text(
-            'Carrier charges may apply',
+            'carrier_charges'.tr,
             style: TextStyle(color: context.theme.greyColor),
           ),
         ],
@@ -178,8 +182,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: CustomElevatedButton(
         onPressed: sendCodeToPhone,
-        text: 'NEXT',
-        buttonWidth: 90,
+        text: 'next'.tr,
+        buttonWidth: 130,
       ),
     );
   }

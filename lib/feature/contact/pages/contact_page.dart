@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:message_app/common/routes/routes.dart';
@@ -67,14 +68,14 @@ class _ContactPageState extends ConsumerState<ContactPage> {
   }
 
   Future<void> shareSmsLink(String phoneNumber) async {
-    Uri sms = Uri.parse("sms:$phoneNumber?body=Let's chat on Бундъварка!");
+    Uri sms = Uri.parse("sms:$phoneNumber?body=${'let_chat_on_bundvarka'.tr}");
     if (await canLaunchUrl(sms)) {
       await launchUrl(sms);
     } else {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('Could not launch SMS')));
+        ).showSnackBar( SnackBar(content: Text('could_not_launch_sms'.tr)));
       }
     }
   }
@@ -95,7 +96,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                 ? TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: 'Search contacts...',
+                    hintText: 'search_contacts'.tr,
                     hintStyle: TextStyle(color: Colors.white54),
                     border: InputBorder.none,
                   ),
@@ -105,8 +106,8 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                 : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Select contact',
+                     Text(
+                      'select_contact'.tr,
                       style: TextStyle(color: Colors.white),
                     ),
                     const SizedBox(height: 3),
@@ -115,7 +116,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                         .when(
                           data: (allContacts) {
                             return Text(
-                              "${allContacts[0].length} Contact${allContacts[0].length == 1 ? '' : 's'}",
+                              "${allContacts[0].length} ${'contacts'.tr}${allContacts[0].length == 1 ? '' : 's'.tr}",
                               style: const TextStyle(fontSize: 13),
                             );
                           },
@@ -123,8 +124,8 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                             return const SizedBox();
                           },
                           loading: () {
-                            return const Text(
-                              'Counting',
+                            return Text(
+                              'counting'.tr,
                               style: TextStyle(fontSize: 12),
                             );
                           },
@@ -171,7 +172,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                                 children: [
                                   myListTile(
                                     leading: Icons.group,
-                                    text: 'New group',
+                                    text: 'new_group'.tr,
                                     onTap: () {
                                       Navigator.of(
                                         context,
@@ -184,7 +185,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                                       vertical: 10,
                                     ),
                                     child: Text(
-                                      'Contacts on Бундъварка',
+                                      'contacts_on_bundvarka'.tr,
                                       style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         color: context.theme.greyColor,
@@ -211,7 +212,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                                   vertical: 10,
                                 ),
                                 child: Text(
-                                  'Contacts on Phone',
+                                  'contacts_on_phone'.tr,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     color: context.theme.greyColor,
@@ -235,7 +236,7 @@ class _ContactPageState extends ConsumerState<ContactPage> {
                       );
                     },
                     error: (e, t) {
-                      return Center(child: Text('Error: $e'));
+                      return Center(child: Text('${'error'.tr}: $e'));
                     },
                     loading: () {
                       return const Center(child: CircularProgressIndicator());

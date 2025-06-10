@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/group_chat_model.dart';
 import 'package:message_app/common/models/group_message_model.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
@@ -69,7 +70,7 @@ class GroupChatPage extends ConsumerWidget {
                 }
 
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text("No messages yet."));
+                  return Center(child: Text("no_messages_yet".tr));
                 }
 
                 final messages = snapshot.data!;
@@ -98,7 +99,7 @@ class GroupChatPage extends ConsumerWidget {
                           .read(groupChatRepositoryProvider)
                           .getUserNameById(message.senderId),
                       builder: (context, userSnapshot) {
-                        final senderName = userSnapshot.data ?? 'Unknown';
+                        final senderName = userSnapshot.data ?? 'unknown'.tr;
 
                         return Column(
                           children: [

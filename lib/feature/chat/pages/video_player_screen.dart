@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:http/http.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:video_player/video_player.dart';
@@ -32,17 +33,14 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
 
   Future<void> _initializePlayer() async {
     try {
-      debugPrint('Initializing video player with URL: ${widget.videoUrl}');
 
       _controller = VideoPlayerController.networkUrl(
         Uri.parse(widget.videoUrl),
       );
 
-      // Добавляем настройки для улучшения совместимости
       _controller.setVolume(1.0);
       _controller.setLooping(false);
 
-      // Add listener for initialization errors
       _controller.addListener(() {
         if (_controller.value.hasError && mounted) {
           setState(() {
@@ -50,11 +48,9 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             _errorMessage =
                 _controller.value.errorDescription ?? 'Unknown error';
           });
-          debugPrint('Video player error: $_errorMessage');
         }
       });
 
-      // Initialize the controller
       await _controller
           .initialize()
           .then((_) {
@@ -67,7 +63,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             }
           })
           .catchError((error) {
-            debugPrint('Error initializing video: $error');
             if (mounted) {
               setState(() {
                 _hasError = true;
@@ -76,7 +71,6 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
             }
           });
     } catch (e) {
-      debugPrint('Exception during video initialization: $e');
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -125,7 +119,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       final finalPath = await FlutterFileDialog.saveFile(params: params);
 
       if (finalPath != null) {
-        message = 'Image saved to disk';
+        message = 'video_saved_to_disk'.tr;
       }
     } catch (e) {
       if (mounted) {
@@ -154,7 +148,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Video', style: TextStyle(color: Colors.white)),
+        title: Text('video'.tr, style: TextStyle(color: Colors.white)),
       ),
       body: Stack(
         children: [
@@ -173,7 +167,7 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 24),
                           child: Text(
-                            'Failed to load video:\n$_errorMessage',
+                            '${'video_player_error'.tr}$_errorMessage',
                             style: const TextStyle(color: Colors.white),
                             textAlign: TextAlign.center,
                           ),
@@ -187,18 +181,18 @@ class _VideoPlayerScreenState extends State<VideoPlayerScreen> {
                             });
                             _initializePlayer();
                           },
-                          child: const Text('Retry'),
+                          child: Text('retry'.tr),
                         ),
                       ],
                     )
                     : !_isInitialized
-                    ? const Column(
+                    ? Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         CircularProgressIndicator(color: Colors.white),
                         SizedBox(height: 16),
                         Text(
-                          'Loading video...',
+                          'loading_video'.tr,
                           style: TextStyle(color: Colors.white),
                         ),
                       ],

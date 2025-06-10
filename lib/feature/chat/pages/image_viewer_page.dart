@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_file_dialog/flutter_file_dialog.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:http/http.dart';
 import 'package:message_app/feature/chat/widgets/build_image_action_button.dart';
 import 'package:path_provider/path_provider.dart';
@@ -136,8 +137,8 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                       ),
                       Text(
                         hasMultipleImages
-                            ? 'Image ${_currentIndex + 1}/${widget.allImages!.length}'
-                            : 'Image Viewer',
+                            ? '${'image'.tr} ${_currentIndex + 1}/${widget.allImages!.length}'
+                            : 'image_viewer'.tr,
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
@@ -172,7 +173,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                             right: 0,
                             child: Center(
                               child: Text(
-                                'Swipe up to close',
+                                'swipe_up_to_close'.tr,
                                 style: TextStyle(
                                   color: Colors.white.withValues(alpha: 0.7),
                                   fontSize: 14,
@@ -187,12 +188,12 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                         children: [
                           buildActionButton(
                             icon: Icons.save_alt,
-                            label: 'Save',
+                            label: 'save'.tr,
                             onTap: _saveImage,
                           ),
                           buildActionButton(
                             icon: Icons.info_outline,
-                            label: 'Info',
+                            label: 'info'.tr,
                             onTap: () => _showImageInfo(context),
                           ),
                         ],
@@ -265,7 +266,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
       final finalPath = await FlutterFileDialog.saveFile(params: params);
 
       if (finalPath != null) {
-        message = 'Image saved to disk';
+        message = 'image_saved_to_disk'.tr;
       }
     } catch (e) {
       if (mounted) {
@@ -299,7 +300,7 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Image Information',
+                  'image_information.tr',
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -316,15 +317,15 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                   future: _getImageSize(),
                   builder: (context, snapshot) {
                     if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Text(
-                        'Loading image details...',
+                      return Text(
+                        'loading_image_details'.tr,
                         style: TextStyle(color: Colors.white70),
                       );
                     }
 
                     if (snapshot.hasError || !snapshot.hasData) {
-                      return const Text(
-                        'Could not load image details',
+                      return Text(
+                        'could_not_load_image_details'.tr,
                         style: TextStyle(color: Colors.white70),
                       );
                     }
@@ -334,12 +335,12 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Size: ${size['width']} x ${size['height']} px',
+                          '${'size'.tr}${size['width']} x ${size['height']} px',
                           style: const TextStyle(color: Colors.white),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'File size: ${(size['fileSize'] / 1024).toStringAsFixed(2)} KB',
+                          '${'file_size'}${(size['fileSize'] / 1024).toStringAsFixed(2)} KB',
                           style: const TextStyle(color: Colors.white),
                         ),
                       ],
@@ -350,8 +351,8 @@ class _ImageViewerPageState extends State<ImageViewerPage> {
                 Center(
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Close',
+                    child: Text(
+                      'close'.tr,
                       style: TextStyle(color: Colors.blue, fontSize: 16),
                     ),
                   ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/routes/routes.dart';
 import 'package:message_app/feature/welcome/pages/widgets/language_button.dart';
@@ -39,14 +40,14 @@ class WelcomePage extends StatelessWidget {
           Expanded(
             child: Column(
               children: [
-                const Text(
-                  'Добро пожаловать в БундъВарку',
+                Text(
+                  'welcome'.tr,
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const PrivacyAndTerms(),
                 CustomElevatedButton(
                   onPressed: () => navigateToLoginPage(context),
-                  text: 'Agree and Continue',
+                  text: 'agree_and_continue'.tr,
                 ),
                 const SizedBox(height: 50),
                 LanguageButton(),

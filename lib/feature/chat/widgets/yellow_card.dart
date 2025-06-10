@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 
 class YellowCard extends StatelessWidget {
@@ -14,7 +15,7 @@ class YellowCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
-        'Message and calls are end-to-end encrypted. No one outside of this chat, not even Бундъварка, can read or listen to them. Tap to learn more.',
+        'end_to_end_encrypted'.tr,
         textAlign: TextAlign.center,
         style: TextStyle(
           fontSize: 13,

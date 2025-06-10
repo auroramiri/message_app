@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
-
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -36,12 +36,12 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
     if (username.isEmpty) {
       return showAllertDialog(
         context: context,
-        message: 'Please, provide a username',
+        message: 'please_provide_info'.tr,
       );
     } else if (username.length < 3 || username.length > 20) {
       return showAllertDialog(
         context: context,
-        message: 'Username must be between 3 and 20 characters',
+        message: 'username_must_be_between'.tr,
       );
     }
     ref
@@ -67,7 +67,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
               children: [
                 SizedBox(width: 20),
                 Text(
-                  'Profile photo',
+                  'profile_photo'.tr,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
                 ),
                 Spacer(),
@@ -86,7 +86,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                 imagePickerIcon(
                   onTap: pickImageFromCamera,
                   icon: Icons.camera_alt_rounded,
-                  text: 'Camera',
+                  text: 'camera'.tr,
                 ),
                 SizedBox(width: 15),
                 imagePickerIcon(
@@ -104,7 +104,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
                     });
                   },
                   icon: Icons.photo_camera_back_rounded,
-                  text: 'Gallery',
+                  text: 'gallery'.tr,
                 ),
               ],
             ),
@@ -125,7 +125,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      showAllertDialog(context: context, message: e.toString());
+      showAllertDialog(context: context, message: 'something_went_wrong'.tr);
     }
   }
 
@@ -174,7 +174,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Text(
-          'Profile info',
+          'profile_info'.tr,
           style: TextStyle(color: context.theme.authAppbarTextColor),
         ),
         centerTitle: true,
@@ -184,7 +184,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
         child: Column(
           children: [
             Text(
-              'Please provide your name and an optional profile photo',
+              'please_provide_info'.tr,
               textAlign: TextAlign.center,
               style: TextStyle(color: context.theme.greyColor),
             ),
@@ -259,7 +259,7 @@ class _UserInfoPageState extends ConsumerState<UserInfoPage> {
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: CustomElevatedButton(
         onPressed: saveUserDataToFirebase,
-        text: 'NEXT',
+        text: 'next',
         buttonWidth: 90,
       ),
     );

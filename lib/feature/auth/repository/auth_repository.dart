@@ -4,6 +4,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/helper/show_alert_dialog.dart';
 import 'package:message_app/common/helper/show_loading_dialog.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -36,7 +37,8 @@ class AuthRepository {
   });
 
   Future<UserModel?> getCurrentUserInfo() async {
-    final userInfo = await firestore.collection('users').doc(auth.currentUser?.uid).get();
+    final userInfo =
+        await firestore.collection('users').doc(auth.currentUser?.uid).get();
     if (userInfo.data() == null) return null;
     return UserModel.fromMap(userInfo.data()!);
   }
@@ -82,7 +84,7 @@ class AuthRepository {
     required bool mounted,
   }) async {
     try {
-      showLoadingDialog(context: context, message: 'Saving user info...');
+      showLoadingDialog(context: context, message: 'saving_user_info'.tr);
       final uid = auth.currentUser!.uid;
       var profileImageUrl = profileImage is String ? profileImage : '';
 
@@ -106,7 +108,9 @@ class AuthRepository {
       }
 
       final keyPair = keyGenerationService.generateRSAKeyPair();
-      final publicKeyPEM = keyGenerationService.encodePublicKeyToPEM(keyPair.publicKey);
+      final publicKeyPEM = keyGenerationService.encodePublicKeyToPEM(
+        keyPair.publicKey,
+      );
       await keyGenerationService.savePrivateKey(keyPair.privateKey);
 
       final user = UserModel(
@@ -146,7 +150,7 @@ class AuthRepository {
     required bool mounted,
   }) async {
     try {
-      showLoadingDialog(context: context, message: 'Verifying code...');
+      showLoadingDialog(context: context, message: 'verifying_code'.tr);
       final credential = PhoneAuthProvider.credential(
         verificationId: smsCodeId,
         smsCode: smsCode,
@@ -165,8 +169,7 @@ class AuthRepository {
         Navigator.pop(context);
         showAllertDialog(
           context: context,
-          message:
-              'Verification code is invalid. Check and enter the correct verification code',
+          message: 'verification_code_is_invalid'.tr,
         );
       }
     }
@@ -179,7 +182,7 @@ class AuthRepository {
     try {
       showLoadingDialog(
         context: context,
-        message: 'Sending a verification code to $phoneNumber',
+        message: '${'sending_verification_code'.tr}$phoneNumber',
       );
       await auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,

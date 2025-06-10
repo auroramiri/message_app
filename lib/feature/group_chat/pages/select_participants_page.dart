@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/last_message_model.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:message_app/feature/chat/repositories/chat_repository.dart'; // Ensure this import is correct
@@ -52,11 +53,18 @@ class _SelectParticipantsPageState
               participantId: participantId,
             );
       }
-      Navigator.pop(context);
+
+      // Check if the widget is still mounted before using the context
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Failed to add participants: $e')));
+      // Check if the widget is still mounted before using the context
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'failed_to_add_participants'.tr}$e')),
+        );
+      }
     }
   }
 
@@ -64,7 +72,7 @@ class _SelectParticipantsPageState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Participants'),
+        title: Text('select_participants'.tr),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -75,10 +83,10 @@ class _SelectParticipantsPageState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(16.0),
             child: Text(
-              'Select Participants',
+              'select_participants'.tr,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
           ),
@@ -91,7 +99,9 @@ class _SelectParticipantsPageState
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: Text('${'error'.tr}: ${snapshot.error}'),
+                  );
                 }
 
                 final lastMessages = snapshot.data ?? [];

@@ -49,7 +49,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               ),
           error:
               (error, stack) =>
-                  Scaffold(body: Center(child: Text('Ошибка: $error'))),
+                  Scaffold(body: Center(child: Text('${'error'.tr}: $error'))),
           data: (user) {
             if (user == null) {
               return const Scaffold(
@@ -78,7 +78,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     tabs: [
                       Tab(text: 'chats'.tr),
                       Tab(text: 'profile'.tr),
-                      if (user.isAdmin) const Tab(text: 'Users'),
+                      if (user.isAdmin) Tab(text: 'users'.tr),
                       Tab(text: 'settings'.tr),
                     ],
                   ),
@@ -95,7 +95,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               ),
                           error:
                               (error, stack) =>
-                                  Center(child: Text('Ошибка: $error')),
+                                  Center(child: Text('${'error'.tr}: $error')),
                           data:
                               (user) =>
                                   user != null

@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +7,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/helper/show_alert_dialog.dart';
@@ -84,12 +86,12 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
           context: context,
           builder:
               (context) => AlertDialog(
-                title: const Text('Error'),
-                content: Text('Failed to sign out: $e'),
+                title: Text('error'.tr),
+                content: Text('${'failed_to_sign_out'.tr}$e'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
-                    child: const Text('OK'),
+                    child: Text('ok'.tr),
                   ),
                 ],
               ),
@@ -112,12 +114,15 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
     String username = usernameController.text;
 
     if (username.isEmpty) {
-      showAllertDialog(context: context, message: 'Please, provide a username');
+      showAllertDialog(
+        context: context,
+        message: 'please_provide_a_username'.tr,
+      );
       return;
     } else if (username.length < 3 || username.length > 20) {
       showAllertDialog(
         context: context,
-        message: 'Username must be between 3 and 20 characters',
+        message: 'username_must_be_between_3_and_20_characters'.tr,
       );
       return;
     }
@@ -167,7 +172,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
               children: [
                 const SizedBox(width: 20),
                 Text(
-                  'Profile photo',
+                  'profile_photo'.tr,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
                 ),
                 const Spacer(),
@@ -186,7 +191,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                 imagePickerIcon(
                   onTap: pickImageFromCamera,
                   icon: Icons.camera_alt_rounded,
-                  text: 'Camera',
+                  text: 'camera'.tr,
                 ),
                 const SizedBox(width: 15),
                 imagePickerIcon(
@@ -197,14 +202,16 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                         builder: (context) => const ImagePickerPage(),
                       ),
                     );
-                    if (image == null) return;
-                    setState(() {
-                      imageGallery = image;
-                      imageCamera = null;
-                    });
+                    if (image != null && mounted) {
+                      setState(() {
+                        imageGallery = image;
+                        imageCamera = null;
+                      });
+                      log("Image selected from gallery");
+                    }
                   },
                   icon: Icons.photo_camera_back_rounded,
-                  text: 'Gallery',
+                  text: 'gallery'.tr,
                 ),
               ],
             ),
@@ -323,7 +330,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
             ),
             const SizedBox(height: 20),
             Text(
-              currentUser?.phoneNumber ?? 'Loading...',
+              currentUser?.phoneNumber ?? 'loading'.tr,
               style: TextStyle(fontSize: 20, color: context.theme.greyColor),
             ),
             Row(
@@ -349,7 +356,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
             ),
             const SizedBox(height: 10),
             CustomListTile(
-              title: 'Save changes',
+              title: 'save_changes'.tr,
               leading: Icons.save,
               onTap: saveUserDataToFirebase,
             ),
@@ -358,7 +365,7 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
               contentPadding: const EdgeInsets.only(left: 25, right: 10),
               leading: const Icon(Icons.block, color: Color(0xFFF15C6D)),
               title: Text(
-                'Delete account: ${currentUser?.username ?? 'Loading'}',
+                '${'delete_account'.tr}: ${currentUser?.username ?? 'loading'.tr}',
                 style: const TextStyle(color: Color(0xFFF15C6D)),
               ),
               onTap: () {
@@ -366,19 +373,19 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text('Delete Account'),
-                      content: const Text(
-                        'Are you sure you want to delete your account?',
+                      title: Text('delete_account'.tr),
+                      content: Text(
+                        'are_you_sure_you_want_to_delete_your_account'.tr,
                       ),
                       actions: <Widget>[
                         TextButton(
-                          child: const Text('Cancel'),
+                          child: Text('cancel'.tr),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
                         ),
                         TextButton(
-                          child: const Text('Delete'),
+                          child: Text('delete'.tr),
                           onPressed: () {
                             Navigator.of(context).pop();
                             deleteUserAccount();
@@ -394,26 +401,23 @@ class _UserInfoPageState extends ConsumerState<UserProfilePage> {
             ListTile(
               contentPadding: const EdgeInsets.only(left: 25, right: 10),
               leading: const Icon(Icons.exit_to_app, color: Colors.blue),
-              title: const Text(
-                'Sign Out',
-                style: TextStyle(color: Colors.blue),
-              ),
+              title: Text('sign_out'.tr, style: TextStyle(color: Colors.blue)),
               onTap: () {
                 showDialog(
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text('Sign Out'),
-                      content: const Text('Are you sure you want to sign out?'),
+                      title: Text('sign_out'.tr),
+                      content: Text('are_you_sure_you_want_to_sign_out'.tr),
                       actions: <Widget>[
                         TextButton(
-                          child: const Text('Cancel'),
+                          child: Text('cancel'.tr),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
                         ),
                         TextButton(
-                          child: const Text('Sign Out'),
+                          child: Text('sign_out'.tr),
                           onPressed: () {
                             Navigator.of(context).pop();
                             signOut();

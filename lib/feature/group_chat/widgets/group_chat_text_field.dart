@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:message_app/common/enum/message_type.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
@@ -42,7 +43,7 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
     if (kIsWeb) {
       showAllertDialog(
         context: context,
-        message: "Audio recording is not supported on web.",
+        message: "audio_recording_not_supported".tr,
       );
       return;
     }
@@ -60,10 +61,12 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
               '${directory.path}/audio_${DateTime.now().millisecondsSinceEpoch}.mp3';
           await recorder.start(const RecordConfig(), path: path);
         } else {
-          showAllertDialog(
-            context: context,
-            message: "Permission to record audio denied.",
-          );
+          if (mounted) {
+            showAllertDialog(
+              context: context,
+              message: "error_recording_audio".tr,
+            );
+          }
         }
       }
       setState(() {
@@ -73,7 +76,7 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
       if (mounted) {
         showAllertDialog(
           context: context,
-          message: 'Error recording audio: $e',
+          message: '${'error_recording_audio'.tr}$e',
         );
       }
     }
@@ -92,7 +95,10 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
       }
     } catch (e) {
       if (!mounted) return;
-      showAllertDialog(context: context, message: 'Error selecting image: $e');
+      showAllertDialog(
+        context: context,
+        message: '${'error_selecting_image'.tr}$e',
+      );
     }
   }
 
@@ -113,8 +119,7 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
           if (mounted) {
             showAllertDialog(
               context: context,
-              message:
-                  'Video size exceeds 50MB limit. Please select a smaller video.',
+              message: 'video_size_exceeds_limit'.tr,
             );
           }
           return;
@@ -125,48 +130,10 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
       }
     } catch (e) {
       if (!mounted) return;
-      showAllertDialog(context: context, message: 'Error selecting video: $e');
-    }
-  }
-
-  void pickVideoFromCamera() async {
-    if (cardHeight > 0) {
-      setState(() => cardHeight = 0);
-    }
-    try {
-      final pickedVideo = await ImagePicker().pickVideo(
-        source: ImageSource.camera,
-        maxDuration: const Duration(minutes: 5),
+      showAllertDialog(
+        context: context,
+        message: '${'error_selecting_video'.tr}$e',
       );
-      if (pickedVideo != null) {
-        final videoFile = File(pickedVideo.path);
-        if (await videoFile.exists()) {
-          final fileSize = await videoFile.length();
-          final maxSize = 50 * 1024 * 1024;
-
-          if (fileSize > maxSize) {
-            if (mounted) {
-              showAllertDialog(
-                context: context,
-                message:
-                    'Video size exceeds 50MB limit. Please record a shorter video.',
-              );
-            }
-            return;
-          }
-
-          sendFileMessage(videoFile, MessageType.video);
-        } else {
-          if (!mounted) return;
-          showAllertDialog(
-            context: context,
-            message: 'Error: Video file not found',
-          );
-        }
-      }
-    } catch (e) {
-      if (!mounted) return;
-      showAllertDialog(context: context, message: 'Error recording video: $e');
     }
   }
 
@@ -186,13 +153,16 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
           if (!mounted) return;
           showAllertDialog(
             context: context,
-            message: 'Error: Image file not found',
+            message: 'error_image_not_found'.tr,
           );
         }
       }
     } catch (e) {
       if (!mounted) return;
-      showAllertDialog(context: context, message: 'Error capturing image: $e');
+      showAllertDialog(
+        context: context,
+        message: '${'error_capturing_image'.tr}$e',
+      );
     }
   }
 
@@ -215,8 +185,7 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
           if (mounted) {
             showAllertDialog(
               context: context,
-              message:
-                  'File size exceeds 30MB limit. Please select a smaller file.',
+              message: 'file_size_exceeds_limit'.tr,
             );
           }
           return;
@@ -299,7 +268,7 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
         children: [
           const Icon(Icons.mic, color: Colors.white, size: 20),
           const SizedBox(width: 8),
-          const Text('Recording...', style: TextStyle(color: Colors.white)),
+          Text('recording'.tr, style: TextStyle(color: Colors.white)),
         ],
       ),
     );
@@ -366,25 +335,25 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
                       iconWithText(
                         onPressed: pickFile,
                         icon: Icons.book,
-                        text: 'File',
-                        background: const Color(0xFF7F61FE),
+                        text: 'file'.tr,
+                        background: const Color(0xFF7F66FE),
                       ),
                       iconWithText(
                         onPressed: pickImageFromCamera,
                         icon: Icons.camera_alt,
-                        text: 'Camera',
+                        text: 'camera'.tr,
                         background: const Color(0xFFFE2E74),
                       ),
                       iconWithText(
                         onPressed: sendImageMessageFromGallery,
                         icon: Icons.photo,
-                        text: 'Gallery',
+                        text: 'gallery'.tr,
                         background: const Color(0xFFC861F9),
                       ),
                       iconWithText(
                         onPressed: sendVideoMessageFromGallery,
                         icon: Icons.movie,
-                        text: 'Video',
+                        text: 'video'.tr,
                         background: const Color(0xFFC861F9),
                       ),
                     ],
@@ -408,7 +377,7 @@ class _GroupChatTextFieldState extends ConsumerState<GroupChatTextField> {
                     setState(() => isMessageIconEnabled = value.isNotEmpty);
                   },
                   decoration: InputDecoration(
-                    hintText: 'Message',
+                    hintText: 'message'.tr,
                     hintStyle: TextStyle(color: context.theme.greyColor),
                     filled: true,
                     fillColor: context.theme.chatTextFieldBg,

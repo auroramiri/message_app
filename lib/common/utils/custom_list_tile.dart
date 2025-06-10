@@ -41,7 +41,9 @@ class _CustomListTileState extends State<CustomListTile> {
       trailing: DropdownButton<String>(
         value: _selectedTime,
         items:
-            <String>['Off', '1 hour', '1 day', '1 week'].map((String value) {
+            <String>['Off', '1 minute', '1 hour', '1 day', '1 week'].map((
+              String value,
+            ) {
               return DropdownMenuItem<String>(value: value, child: Text(value));
             }).toList(),
         onChanged: (String? newValue) {

@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:message_app/common/models/last_message_model.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -40,9 +41,9 @@ class _GroupSettingsPageState extends ConsumerState<GroupSettingsPage> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'failed_to_pick_image'.tr}$e')),
+        );
       }
     }
   }
@@ -85,12 +86,14 @@ class _GroupSettingsPageState extends ConsumerState<GroupSettingsPage> {
             participantIds: participantIds,
             groupIconUrl: groupIconUrl,
           );
-      Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to create group: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${'failed_to_create_group'.tr}$e')),
+        );
       }
     }
   }
@@ -99,7 +102,7 @@ class _GroupSettingsPageState extends ConsumerState<GroupSettingsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Group Chat'),
+        title: Text('create_group_chat'.tr),
         actions: [
           IconButton(icon: const Icon(Icons.check), onPressed: createGroup),
         ],
@@ -121,7 +124,7 @@ class _GroupSettingsPageState extends ConsumerState<GroupSettingsPage> {
                           children: <Widget>[
                             ListTile(
                               leading: const Icon(Icons.photo_library),
-                              title: const Text('Gallery'),
+                              title: Text('gallery'.tr),
                               onTap: () {
                                 Navigator.pop(context);
                                 pickImageFromGallery();
@@ -149,14 +152,14 @@ class _GroupSettingsPageState extends ConsumerState<GroupSettingsPage> {
             const SizedBox(height: 20),
             TextField(
               controller: _groupNameController,
-              decoration: const InputDecoration(
-                labelText: 'Group Name',
+              decoration: InputDecoration(
+                labelText: 'group_name'.tr,
                 border: OutlineInputBorder(),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Select Participants',
+            Text(
+              'select_participants'.tr,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
@@ -168,7 +171,9 @@ class _GroupSettingsPageState extends ConsumerState<GroupSettingsPage> {
                 }
 
                 if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
+                  return Center(
+                    child: Text('${'error'.tr}: ${snapshot.error}'),
+                  );
                 }
 
                 final lastMessages = snapshot.data ?? [];

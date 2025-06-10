@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/helper/last_seen_message.dart';
 import 'package:message_app/common/models/user_model.dart';
@@ -64,8 +65,8 @@ class ProfilePage extends ConsumerWidget {
                               ),
                               Text(
                                 singleUserModel.active
-                                    ? 'online'
-                                    : "last seen $lastMessage ago",
+                                    ? 'online'.tr
+                                    : "${'last_seen'.tr}$lastMessage${'ago'.tr}",
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Colors.white,
@@ -80,9 +81,9 @@ class ProfilePage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 20),
                 CustomListTile(
-                  title: 'Disappearing messages',
+                  title: 'disappearing_messages'.tr,
                   leading: Icons.timer,
-                  subTitle: 'Set a timer to delete messages',
+                  subTitle: 'set_a_timer_to_delete_messages'.tr,
                   onTimeSelected: (time) {
                     final disappearingMessagesService =
                         DisappearingMessagesService(

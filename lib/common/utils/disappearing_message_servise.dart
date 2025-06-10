@@ -11,6 +11,8 @@ class DisappearingMessagesService {
   void setDisappearingMessagesTimer(String time, String chatId) {
     Duration duration;
     switch (time) {
+      case '1 minute':
+        duration = Duration(minutes: 1);
       case '1 hour':
         duration = Duration(hours: 1);
         break;

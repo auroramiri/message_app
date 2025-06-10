@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -49,7 +50,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to remove profile image: $e')),
+          SnackBar(content: Text('${'failed_to_remove_profile_image'.tr}$e')),
         );
       }
     }
@@ -64,15 +65,15 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('User information updated successfully'),
-          ),
+          SnackBar(content: Text('user_information_updated_successfully'.tr)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update user information: $e')),
+          SnackBar(
+            content: Text('${'failed_to_update_user_information'.tr}$e'),
+          ),
         );
       }
     }
@@ -106,15 +107,15 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User account deleted successfully')),
+          SnackBar(content: Text('user_account_deleted_successfully'.tr)),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete user account: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${'failed_to_delete_user_account'.tr}$e')));
       }
     }
   }
@@ -123,7 +124,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('User Profile'),
+        title: Text('user_profile'.tr),
         actions: [
           IconButton(
             icon: Icon(isEditing ? Icons.done : Icons.edit),
@@ -169,8 +170,8 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
             TextField(
               controller: usernameController,
               enabled: isEditing,
-              decoration: const InputDecoration(
-                labelText: 'Username',
+              decoration: InputDecoration(
+                labelText: 'username'.tr,
                 border: OutlineInputBorder(),
               ),
             ),
@@ -178,7 +179,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
             if (isEditing)
               ElevatedButton(
                 onPressed: saveUserChanges,
-                child: const Text('Save Changes'),
+                child: Text('save_changes'.tr),
               ),
             const SizedBox(height: 20),
             ElevatedButton(
@@ -187,19 +188,19 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
                   context: context,
                   builder: (BuildContext context) {
                     return AlertDialog(
-                      title: const Text('Delete Account'),
-                      content: const Text(
-                        'Are you sure you want to delete this account?',
+                      title: Text('delete_account'.tr),
+                      content: Text(
+                        'are_you_sure_you_want_to_delete_this_account'.tr,
                       ),
                       actions: <Widget>[
                         TextButton(
-                          child: const Text('Cancel'),
+                          child: Text('cancel'.tr),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
                         ),
                         TextButton(
-                          child: const Text('Delete'),
+                          child: Text('delete'.tr),
                           onPressed: () {
                             Navigator.of(context).pop();
                             deleteUserAccount();
@@ -211,7 +212,7 @@ class _AdminUserProfilePageState extends State<AdminUserProfilePage> {
                 );
               },
               style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-              child: const Text('Delete Account'),
+              child: Text('delete_account'.tr),
             ),
           ],
         ),

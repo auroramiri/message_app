@@ -1,4 +1,3 @@
-import 'dart:developer' as developer;
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:custom_clippers/custom_clippers.dart';
@@ -6,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/services/encryption/key_generation_service.dart';
 import 'package:message_app/common/utils/context_menu.dart';
@@ -162,9 +162,9 @@ class MessageCard extends ConsumerWidget {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const CircularProgressIndicator();
         } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}');
+          return Text('${'error'.tr}: ${snapshot.error}');
         } else {
-          final decryptedMessage = snapshot.data ?? 'No message';
+          final decryptedMessage = snapshot.data ?? 'no_message'.tr;
 
           return Column(
             crossAxisAlignment:
@@ -270,18 +270,15 @@ class MessageCard extends ConsumerWidget {
           .decryptMessage(message.textMessage),
       builder: (context, snapshot) {
         String displayedFileName =
-            'Загрузка названия файла...'; // Текст по умолчанию
+            'loading_file_name'.tr; // Текст по умолчанию
         String? decryptedFileName; // Переменная для расшифрованного названия
 
         if (snapshot.connectionState == ConnectionState.waiting) {
           // Пока ждем расшифровки, показываем индикатор или текст загрузки
-          displayedFileName = 'Загрузка названия...';
+          displayedFileName = 'loading_file_name'.tr;
         } else if (snapshot.hasError) {
           // Если произошла ошибка расшифровки
-          displayedFileName = 'Ошибка расшифровки названия';
-          developer.log(
-            'Error decrypting file name: ${snapshot.error}',
-          ); // Логируем ошибку
+          displayedFileName = 'error_decrypting_file_name'.tr;
         } else if (snapshot.hasData) {
           // Если расшифровка успешна
           decryptedFileName = snapshot.data!;
@@ -446,8 +443,8 @@ class MessageCard extends ConsumerWidget {
                     children: [
                       const Icon(Icons.videocam, color: Colors.white, size: 16),
                       const SizedBox(width: 4),
-                      const Text(
-                        'Video',
+                      Text(
+                        'video'.tr,
                         style: TextStyle(color: Colors.white, fontSize: 12),
                       ),
                       const SizedBox(width: 4),

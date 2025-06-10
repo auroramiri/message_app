@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/group_chat_model.dart';
 import 'package:message_app/feature/group_chat/controllers/group_chat_controller.dart';
 import 'package:message_app/feature/group_chat/pages/select_participants_page.dart';
@@ -25,9 +26,11 @@ class GroupProfilePage extends ConsumerWidget {
               participantId: participantId,
             );
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to remove participant: $e')),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${'failed_to_remove_participant'.tr}$e')),
+          );
+        }
       }
     }
 
@@ -43,16 +46,20 @@ class GroupProfilePage extends ConsumerWidget {
               groupId: group.groupId,
               participantId: currentUserId!,
             );
-        Navigator.pop(context);
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
       } catch (e) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to leave group: $e')));
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('${'failed_to_leave_group'.tr}$e')),
+          );
+        }
       }
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Group Profile')),
+      appBar: AppBar(title: Text('group_profile'.tr)),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -82,8 +89,8 @@ class GroupProfilePage extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'Participants',
+            Text(
+              'participants'.tr,
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -97,7 +104,7 @@ class GroupProfilePage extends ConsumerWidget {
                         .read(groupChatRepositoryProvider)
                         .getUserNameById(participantId),
                     builder: (context, snapshot) {
-                      final participantName = snapshot.data ?? 'Unknown';
+                      final participantName = snapshot.data ?? 'unknown'.tr;
                       return ListTile(
                         title: Text(participantName),
                         trailing:
@@ -129,17 +136,17 @@ class GroupProfilePage extends ConsumerWidget {
                         ),
                       );
                     },
-                    child: const Text('Add Participants'),
+                    child: Text('add_participants'.tr),
                   ),
                   ElevatedButton(
                     onPressed: deleteGroup,
-                    child: const Text('Delete Group'),
+                    child: Text('delete_group'.tr),
                   ),
                 ],
               ),
             ElevatedButton(
               onPressed: leaveGroup,
-              child: const Text('Leave Group'),
+              child: Text('leave_group'.tr),
             ),
           ],
         ),

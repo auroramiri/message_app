@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/pages/video_player_screen.dart';
 import 'package:path_provider/path_provider.dart';
@@ -31,10 +32,8 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
 
   Future<void> _generateThumbnails() async {
     for (var message in widget.videoMessages) {
-      log('Message URL: ${message.fileUrl}');
       if (message.fileUrl != null) {
         try {
-          log('Generating thumbnail for video: ${message.fileUrl}');
           final thumbnailPath = await _generateThumbnail(message.fileUrl!);
           if (mounted) {
             setState(() {
@@ -98,12 +97,12 @@ class _ChatVideoGalleryPageState extends State<ChatVideoGalleryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.chatName}\'s Videos')),
+      appBar: AppBar(title: Text('${widget.chatName}${'s_video'.tr}')),
       body:
           widget.videoMessages.isEmpty
               ? Center(
                 child: Text(
-                  'No videos in this chat',
+                  'no_videos_in_chat'.tr,
                   style: TextStyle(fontSize: 16),
                 ),
               )

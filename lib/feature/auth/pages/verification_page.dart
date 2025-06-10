@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/widgets/custom_icon_button.dart';
 import 'package:message_app/feature/auth/controller/auth_controller.dart';
@@ -32,7 +33,7 @@ class VerificationPage extends ConsumerWidget {
         backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         elevation: 0,
         title: Text(
-          'Verify your phone\'s number',
+          'verify_phone_number'.tr,
           style: TextStyle(color: context.theme.authAppbarTextColor),
         ),
         centerTitle: true,
@@ -51,10 +52,10 @@ class VerificationPage extends ConsumerWidget {
                   children: [
                     TextSpan(
                       text:
-                          "You've tried to register +$phoneNumber. before requesting an SMS or call with your code. ",
+                          "${'you_tried_to_register'.tr} +$phoneNumber. ${'before_requesting'.tr} ",
                     ),
                     TextSpan(
-                      text: 'Wrong number?',
+                      text: 'wrong_number'.tr,
                       style: TextStyle(color: context.theme.blueColor),
                     ),
                   ],
@@ -78,7 +79,7 @@ class VerificationPage extends ConsumerWidget {
             ),
             const SizedBox(height: 20),
             Text(
-              'Enter 6-digit code',
+              'enter_6_digit_code'.tr,
               style: TextStyle(color: context.theme.greyColor),
             ),
             const SizedBox(height: 30),
@@ -87,7 +88,7 @@ class VerificationPage extends ConsumerWidget {
                 Icon(Icons.message, color: context.theme.greyColor),
                 const SizedBox(width: 20),
                 Text(
-                  'Resend code',
+                  'resend_code'.tr,
                   style: TextStyle(color: context.theme.greyColor),
                 ),
               ],

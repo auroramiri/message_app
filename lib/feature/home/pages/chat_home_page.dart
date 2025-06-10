@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:intl/intl.dart';
 import 'package:message_app/common/extension/custom_theme_extension.dart';
 import 'package:message_app/common/models/group_chat_model.dart';
@@ -36,7 +37,7 @@ class ChatHomePage extends ConsumerWidget {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('${'error'.tr}: ${snapshot.error}'));
           }
 
           final lastMessages =
@@ -144,7 +145,7 @@ class ChatHomePage extends ConsumerWidget {
                             ? DateFormat.Hm().format(
                               groupChatData.lastMessageTime!,
                             )
-                            : 'No time',
+                            : 'no_time'.tr,
                         style: TextStyle(
                           fontSize: 13,
                           color: context.theme.greyColor,
@@ -155,7 +156,7 @@ class ChatHomePage extends ConsumerWidget {
                   subtitle: Padding(
                     padding: const EdgeInsets.only(top: 3),
                     child: Text(
-                      groupChatData.lastMessage ?? 'No messages',
+                      groupChatData.lastMessage ?? 'no_messages'.tr,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(color: context.theme.greyColor),

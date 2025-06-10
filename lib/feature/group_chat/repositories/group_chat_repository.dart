@@ -39,7 +39,7 @@ class GroupChatRepository {
         participantIds: [...uniqueParticipantIds, currentUserId],
         moderatorIds: [currentUserId],
         createdAt: DateTime.now(),
-        lastMessage: '',
+        lastMessage: 'No Messages',
       );
 
       await firestore.collection('groups').doc(groupId).set(group.toMap());

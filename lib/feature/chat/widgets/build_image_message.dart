@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/pages/chat_page.dart';
 import 'package:message_app/feature/chat/pages/image_viewer_page.dart';
@@ -58,8 +59,8 @@ Widget buildImageMessage(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
-                      'Uploading...',
+                    Text(
+                      'uploading'.tr,
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,

@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/message_model.dart';
 import 'package:message_app/feature/chat/pages/image_viewer_page.dart';
 
@@ -28,9 +29,9 @@ class ChatImageGalleryPage extends ConsumerWidget {
       ),
       body:
           imageMessages.isEmpty
-              ? const Center(
+              ? Center(
                 child: Text(
-                  'No images in this chat',
+                  'no_images_in_chat'.tr,
                   style: TextStyle(color: Colors.white),
                 ),
               )

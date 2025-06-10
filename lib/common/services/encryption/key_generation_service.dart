@@ -190,7 +190,6 @@ class KeyGenerationService {
         .join();
   }
 
-  // Decode public key from PEM format
   RSAPublicKey decodePublicKeyFromPEM(String pemString) {
     try {
       final base64String = extractBase64FromPEM(pemString);

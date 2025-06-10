@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:get/get_utils/src/extensions/internacionalization.dart';
 import 'package:message_app/common/models/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:message_app/feature/home/pages/admin_user_profile_page.dart';
@@ -19,12 +20,12 @@ class AdminPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Users List')),
+      appBar: AppBar(title: Text('users_list'.tr)),
       body: ref
           .watch(usersStreamProvider)
           .when(
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, stack) => Center(child: Text('Error: $error')),
+            error: (error, stack) => Center(child: Text('${'error'.tr}: $error')),
             data: (users) {
               return ListView.builder(
                 itemCount: users.length,

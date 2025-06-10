@@ -234,7 +234,7 @@ class ChatPage extends ConsumerWidget {
                 );
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('No videos in this chat')),
+                  SnackBar(content: Text('no_videos_in_chat'.tr)),
                 );
               }
             },
